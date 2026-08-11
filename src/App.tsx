@@ -88,18 +88,22 @@ interface DmWeekScore extends DmScore {
 
 interface RegionWeekScore { region:string; units:number; usd:number; weekly:Record<number,number> }
 
-function StoreTable({ scores, metric, title, message, trends, ascending = false, limit = 10 }: {
-  scores:StoreScore[]; metric:Metric; title:string; message:string; trends:Map<string,StoreTrend>; ascending?:boolean; limit?:number
+function StoreTable({ scores, metric, title, message, trends, ascending = false, limit = 10, variant = 'top' }: {
+  scores:StoreScore[]; metric:Metric; title:string; message:string; trends:Map<string,StoreTrend>; ascending?:boolean; limit?:number; variant?:'top'|'support'|'portfolio'
 }) {
   const sorted = [...scores].sort((a,b) => {
     const difference = metricValue(metric, a.units, a.usd) - metricValue(metric, b.units, b.usd)
     return (ascending ? difference : -difference) || a.store.localeCompare(b.store, 'es')
   }).slice(0,limit)
   const max = Math.max(1, ...sorted.map(score => metricValue(metric, score.units, score.usd)))
-  return <section className="panel ranking-panel">
-    <div className="panel-heading"><div><p className="eyebrow">{ascending ? 'Foco' : 'Top'}</p><h2>{title}</h2><p>{message}</p></div><span className={`status-chip ${ascending ? 'warning' : ''}`}>{sorted.length} tiendas</span></div>
+  const averageUsd = scores.length ? scores.reduce((sum,score) => sum + score.usd,0) / scores.length : 0
+  const averageUnits = scores.length ? scores.reduce((sum,score) => sum + score.units,0) / scores.length : 0
+  const percentages = scores.map(score => trends.get(score.cc)?.percent).filter((value):value is number => value !== null && value !== undefined)
+  const averageTrend = percentages.length ? percentages.reduce((sum,value) => sum + value,0) / percentages.length : null
+  return <section className={`panel ranking-panel ${variant}-panel`}>
+    <div className="panel-heading"><div><p className="eyebrow">{variant === 'support' ? 'Requieren apoyo' : variant === 'portfolio' ? 'Alcance seleccionado' : 'Dan empuje'}</p><h2>{title}</h2><p>{message}</p></div><span className={`status-chip ${variant === 'support' ? 'warning' : ''}`}>{sorted.length} de {scores.length} tiendas</span></div>
     {!sorted.length ? <EmptyState>No existen tiendas en el alcance seleccionado.</EmptyState> : <div className="table-scroll"><table>
-      <thead><tr><th>#</th><th>Tienda</th><th>USD</th><th>Total impulso</th><th>Tendencia</th></tr></thead>
+      <thead><tr><th>#</th><th>Tienda</th><th>USD</th><th>Total unidades</th><th>Tendencia<small className="trend-caption">1ª vs última semana</small></th></tr></thead>
       <tbody>{sorted.map((score,index) => {
         const value = metricValue(metric, score.units, score.usd)
         const trend = trends.get(score.cc)
@@ -116,12 +120,14 @@ function StoreTable({ scores, metric, title, message, trends, ascending = false,
           <td><span className={`trend-pill ${direction}`}><TrendIcon size={14} />{trendText}</span></td>
         </tr>
       })}</tbody>
+      <tfoot><tr><td colSpan={2}><strong>Promedio de la selección</strong><small>{scores.length} tiendas consideradas</small></td><td><strong>{decimalFormatter.format(averageUsd)}</strong></td><td><strong>{decimalFormatter.format(averageUnits)}</strong></td><td><span className="selection-trend">{averageTrend === null ? '—' : `${averageTrend > 0 ? '+' : ''}${decimalFormatter.format(averageTrend)}%`}</span></td></tr></tfoot>
     </table></div>}
   </section>
 }
 
 function ScopeWeekTable({ scores, metric, weeks, level }: { scores:Array<DmWeekScore | RegionWeekScore>; metric:Metric; weeks:number[]; level:'DM'|'Región' }) {
   const sorted = [...scores].sort((a,b) => metricValue(metric,b.units,b.usd) - metricValue(metric,a.units,a.usd))
+  const average = (values:number[]) => values.length ? values.reduce((sum,value) => sum + value,0) / values.length : 0
   return <section className="panel dm-panel">
     <div className="panel-heading"><div><p className="eyebrow">Benchmark ejecutivo</p><h2>Tendencia semanal por {level}</h2><p>Compara el mismo alcance y detecta rápidamente dónde replicar prácticas.</p></div><span className="status-chip">{sorted.length} {level === 'DM' ? 'distritos' : 'regiones'}</span></div>
     {!sorted.length ? <EmptyState>No hay información en el alcance seleccionado.</EmptyState> : <div className="table-scroll dm-week-table"><table>
@@ -132,6 +138,7 @@ function ScopeWeekTable({ scores, metric, weeks, level }: { scores:Array<DmWeekS
         {weeks.map(value => <td key={value}>{formatMetric(metric,score.weekly[value] ?? 0)}</td>)}
         <td><strong>{formatMetric(metric,metricValue(metric,score.units,score.usd))}</strong></td>
       </tr>})}</tbody>
+      <tfoot><tr><td>—</td><td><strong>Promedio de la selección</strong><small>{sorted.length} {level === 'DM' ? 'distritos' : 'regiones'}</small></td>{weeks.map(value => <td key={value}><strong>{formatMetric(metric,average(sorted.map(score => score.weekly[value] ?? 0)))}</strong></td>)}<td><strong>{formatMetric(metric,average(sorted.map(score => metricValue(metric,score.units,score.usd))))}</strong></td></tr></tfoot>
     </table></div>}
   </section>
 }
@@ -165,10 +172,13 @@ function InspirationPanel({ leader, total, metric, benchmark, isNational }: { le
   </article>
 }
 
-function ObjectiveDisclosure() {
+function ObjectiveDisclosure({ view }:{ view:View }) {
+  const merch = view === 'merch'
   return <details className="objective-disclosure">
-    <summary><TargetIcon /><span><strong>Objetivo +50 unidades</strong><small>Activa la guía visual de esfuerzo operativo</small></span><ChevronDown size={18} /></summary>
-    <div><img src={`${import.meta.env.BASE_URL}assets/objetivo_esfuerzo_operativo.webp`} alt="Esfuerzo operativo: Donas, Cake Pop's y Galletas suman 50 unidades; planear, ejecutar, revisar y ajustar." loading="lazy" decoding="async" /></div>
+    <summary><TargetIcon /><span><strong>{merch ? 'Objetivo Merch · crecer más de 10 USD' : 'Objetivo +50 unidades'}</strong><small>{merch ? 'Contra la semana anterior' : 'Activa la guía visual de esfuerzo operativo'}</small></span><ChevronDown size={18} /></summary>
+    {merch
+      ? <div className="merch-objective"><span><ArrowUpRight size={26} /></span><div><strong>&gt;10 USD</strong><p>Crecimiento esperado frente a la semana anterior, comparando el mismo alcance.</p></div></div>
+      : <div><img src={`${import.meta.env.BASE_URL}assets/objetivo_esfuerzo_operativo.webp`} alt="Esfuerzo operativo: Donas, Cake Pop's y Galletas suman 50 unidades; planear, ejecutar, revisar y ajustar." loading="lazy" decoding="async" /></div>}
   </details>
 }
 
@@ -218,7 +228,6 @@ function Filters({
   function resetScope() { setRegion('Todas'); setDm('Todos'); setCc('Todos') }
   return <section className="filters" aria-label="Filtros del tablero">
     <div className="filter-topline">
-      <p className="filter-context">{view === 'merch' ? 'Impulso Merch · motor independiente' : `${selectedGroups.size} de 3 familias · meta conjunta +50`}</p>
       <div className="metric-toggle" aria-label="Métrica principal">
         <button type="button" className={metric === 'usd' ? 'active' : ''} onClick={() => setMetric('usd')} aria-pressed={metric === 'usd'}>USD</button>
         <button type="button" className={metric === 'total' ? 'active' : ''} onClick={() => setMetric('total')} aria-pressed={metric === 'total'}>Unidades Totales</button>
@@ -453,11 +462,10 @@ export function App() {
   const currentCutoff = view === 'merch' ? data.meta.latestMerchDate : data.meta.latestOperationalDate
   const compactStoreScope = dm !== 'Todos' || cc !== 'Todos'
   const viewCopy = view === 'merch'
-    ? { eyebrow:'Impulso Merch', title:'Recomienda e impulsa.', description:'Seguimiento diario del impulso Merch.' }
-    : { eyebrow:'Estrategia regional y distrital', title:'Impulsamos juntos.', description:'Cake Pop, galletas y Dona G&G: una lectura directa para reconocer avances y actuar.' }
+    ? { title:'Recomienda e impulsa.', description:'Crece más de 10 USD frente a la semana anterior.' }
+    : { title:'Impulsamos juntos.', description:"Cake Pop, Galletas y Dona G&G" }
   const leaderName = cc !== 'Todos' ? scopeStores[0]?.dm : bestDm?.dm
   const leadingStore = [...storeScores].sort((a,b) => metricValue(metric,b.units,b.usd) - metricValue(metric,a.units,a.usd))[0]
-  const scopeRegionLabel = region === 'Todas' ? 'Todas las regiones' : region
   const isNationalScope = region === 'Todas' && dm === 'Todos' && cc === 'Todos'
   const inspirationTotal = bestDm ? metricValue(metric,bestDm.units,bestDm.usd) : metric === 'usd' ? totalUsd : totalUnits
 
@@ -476,7 +484,7 @@ export function App() {
 
     <main>
       <section className={`hero ${view === 'merch' ? 'merch' : ''}`}>
-        <div className="hero-copy"><p className="eyebrow">{scopeRegionLabel} · {viewCopy.eyebrow}</p><h1>{viewCopy.title}</h1><p>{viewCopy.description}</p>
+        <div className="hero-copy"><h1>{viewCopy.title}</h1><p>{viewCopy.description}</p>
           <div className="hero-actions"><a href="#tablero">Ver avance <ChevronRight size={17} /></a><span><CalendarDays size={16} /> Corte al {shortDate(currentCutoff)}</span></div>
         </div>
         <div className="hero-visual"><img src={`${import.meta.env.BASE_URL}assets/${view === 'merch' ? 'impulso_merch.webp' : 'Esfuerzo_Operativo.webp'}`} alt={view === 'merch' ? 'Guía visual Impulso Merch de la semana' : 'Identidad visual de Esfuerzo Operativo'} loading={view === 'merch' ? 'lazy' : 'eager'} decoding="async" /></div>
@@ -487,13 +495,13 @@ export function App() {
 
       <div className="executive-heading"><div><p className="eyebrow">Datos clave</p><h2>{viewLabel} al corte</h2></div><span>{region === 'Todas' ? 'Región completa' : region}{dm !== 'Todos' ? ` · ${dm}` : ''}</span></div>
       <section className="kpi-grid" aria-label="Resumen ejecutivo">
-        <Card label="Total impulso" value={integerFormatter.format(totalUnits)} note={`${dayCount} ${dayCount === 1 ? 'día' : 'días'} · ${storeScores.length} tiendas`} icon={PackageOpen} />
+        <Card label="Total unidades" value={integerFormatter.format(totalUnits)} note={`${dayCount} ${dayCount === 1 ? 'día' : 'días'} · ${storeScores.length} tiendas`} icon={PackageOpen} />
         <Card label="USD" value={decimalFormatter.format(totalUsd)} note="Promedio diario por tienda" icon={CircleGauge} tone="gold" />
         <Card label="Cobertura" value={`${activeStores}/${storeScores.length}`} note={`${storeScores.length ? Math.round(activeStores / storeScores.length * 100) : 0}% con impulso`} icon={Building2} tone="cream" />
         <Card label={`Movimiento ${metricLabel(metric)}`} value={`${change > 0 ? '+' : ''}${formatMetric(metric,change)}`} note={change > 0 ? 'vs día anterior' : change < 0 ? 'oportunidad vs día anterior' : 'se mantiene'} icon={change >= 0 ? ArrowUpRight : ArrowDownRight} tone={change >= 0 ? 'green' : 'ink'} />
       </section>
 
-      <ObjectiveDisclosure />
+      <ObjectiveDisclosure view={view} />
 
       {cc !== 'Todos' && selectedWeeks.size === 1 && <div className="week-guidance"><CalendarDays size={18} /><span><strong>¿Quieres evaluar tendencia?</strong> Selecciona una semana adicional para comparar; con tres o más verás la evolución semanal.</span></div>}
 
@@ -506,10 +514,10 @@ export function App() {
 
       <div className="ranking-toolbar"><div><p className="eyebrow">Tiendas</p><h2>{compactStoreScope ? 'Portafolio seleccionado' : 'Top y foco operativo'}</h2></div><button type="button" className="pdf-action" onClick={async () => { const { createExecutivePdf } = await import('./pdf'); createExecutivePdf({ data,view,metric,month,weeks:selectedWeeks,region,dm,cc,groups:selectedGroups,stores:scopeStores }) }}><FileDown size={17} />Generar PDF carta · 1 hoja</button></div>
       {compactStoreScope
-        ? <StoreTable scores={storeScores} metric={metric} trends={storeTrends} title="Portafolio seleccionado" message="Una lectura puntual para acompañar cada tienda." limit={storeScores.length} />
+        ? <StoreTable scores={storeScores} metric={metric} trends={storeTrends} title="Portafolio seleccionado" message="Una lectura puntual para acompañar cada tienda." limit={storeScores.length} variant="portfolio" />
         : <div className="ranking-grid">
-            <StoreTable scores={storeScores} metric={metric} trends={storeTrends} title="10 tiendas con mayor impulso" message="Reconoce el avance y comparte lo que está funcionando." limit={10} />
-            <StoreTable scores={storeScores} metric={metric} trends={storeTrends} title="10 tiendas para acompañar" message="Una conversación cercana puede activar el siguiente avance." ascending limit={10} />
+            <StoreTable scores={storeScores} metric={metric} trends={storeTrends} title="10 tiendas que dan empuje" message="Reconoce el avance y comparte lo que está funcionando." limit={10} variant="top" />
+            <StoreTable scores={storeScores} metric={metric} trends={storeTrends} title="10 tiendas que requieren apoyo" message="Una conversación cercana puede activar el siguiente avance." ascending limit={10} variant="support" />
           </div>}
     </main>
 

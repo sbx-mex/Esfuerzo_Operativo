@@ -11,6 +11,7 @@
     "enginesSeparated": true,
     "immediateTarget": "Mejorar USD vs la semana anterior",
     "sustainableTarget": "Superar 50 unidades",
+    "merchTarget": "Crecer más de 10 USD contra la semana anterior",
     "periodRules": {
       "openWeek": "Seguimiento al ritmo diario; el resultado todavía puede cambiar.",
       "oneOrTwoWeeks": "Comparativo por día.",
