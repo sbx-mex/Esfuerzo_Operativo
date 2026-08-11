@@ -1,4 +1,4 @@
-export type View = 'operativo' | 'dm' | 'merch'
+export type View = 'operativo' | 'merch'
 export type Metric = 'usd' | 'total'
 export type ProductGroup = "Cake Pop's" | 'Galletas' | 'Dona G&G'
 
