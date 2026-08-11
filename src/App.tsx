@@ -96,10 +96,6 @@ function StoreTable({ scores, metric, title, message, trends, ascending = false,
     return (ascending ? difference : -difference) || a.store.localeCompare(b.store, 'es')
   }).slice(0,limit)
   const max = Math.max(1, ...sorted.map(score => metricValue(metric, score.units, score.usd)))
-  const averageUsd = scores.length ? scores.reduce((sum,score) => sum + score.usd,0) / scores.length : 0
-  const averageUnits = scores.length ? scores.reduce((sum,score) => sum + score.units,0) / scores.length : 0
-  const percentages = scores.map(score => trends.get(score.cc)?.percent).filter((value):value is number => value !== null && value !== undefined)
-  const averageTrend = percentages.length ? percentages.reduce((sum,value) => sum + value,0) / percentages.length : null
   return <section className={`panel ranking-panel ${variant}-panel`}>
     <div className="panel-heading"><div><p className="eyebrow">{variant === 'support' ? 'Requieren apoyo' : variant === 'portfolio' ? 'Alcance seleccionado' : 'Dan empuje'}</p><h2>{title}</h2><p>{message}</p></div><span className={`status-chip ${variant === 'support' ? 'warning' : ''}`}>{sorted.length} de {scores.length} tiendas</span></div>
     {!sorted.length ? <EmptyState>No existen tiendas en el alcance seleccionado.</EmptyState> : <div className="table-scroll"><table>
@@ -120,25 +116,27 @@ function StoreTable({ scores, metric, title, message, trends, ascending = false,
           <td><span className={`trend-pill ${direction}`}><TrendIcon size={14} />{trendText}</span></td>
         </tr>
       })}</tbody>
-      <tfoot><tr><td colSpan={2}><strong>Promedio de la selección</strong><small>{scores.length} tiendas consideradas</small></td><td><strong>{decimalFormatter.format(averageUsd)}</strong></td><td><strong>{decimalFormatter.format(averageUnits)}</strong></td><td><span className="selection-trend">{averageTrend === null ? '—' : `${averageTrend > 0 ? '+' : ''}${decimalFormatter.format(averageTrend)}%`}</span></td></tr></tfoot>
     </table></div>}
   </section>
 }
 
-function ScopeWeekTable({ scores, metric, weeks, level }: { scores:Array<DmWeekScore | RegionWeekScore>; metric:Metric; weeks:number[]; level:'DM'|'Región' }) {
+function ScopeWeekTable({ scores, metric, weeks, level, scopeLabel }: { scores:Array<DmWeekScore | RegionWeekScore>; metric:Metric; weeks:number[]; level:'DM'|'Región'; scopeLabel:string }) {
   const sorted = [...scores].sort((a,b) => metricValue(metric,b.units,b.usd) - metricValue(metric,a.units,a.usd))
   const average = (values:number[]) => values.length ? values.reduce((sum,value) => sum + value,0) / values.length : 0
+  const weeklyAverages = new Map(weeks.map(week => [week,average(sorted.map(score => score.weekly[week] ?? 0))]))
+  const totalAverage = average(sorted.map(score => metricValue(metric,score.units,score.usd)))
+  const heatClass = (value:number,mean:number) => sorted.length < 2 || Math.abs(value - mean) < .0001 ? 'heat-neutral' : value > mean ? 'heat-high' : 'heat-low'
   return <section className="panel dm-panel">
-    <div className="panel-heading"><div><p className="eyebrow">Benchmark ejecutivo</p><h2>Tendencia semanal por {level}</h2><p>Compara el mismo alcance y detecta rápidamente dónde replicar prácticas.</p></div><span className="status-chip">{sorted.length} {level === 'DM' ? 'distritos' : 'regiones'}</span></div>
+    <div className="panel-heading"><div><p className="eyebrow">Benchmark ejecutivo</p><h2>Tendencia semanal por {level}</h2><p>Compara el mismo alcance y detecta rápidamente dónde replicar prácticas.</p></div><div className="benchmark-meta"><span className="status-chip">{sorted.length} {level === 'DM' ? 'distritos' : 'regiones'}</span><span className="heat-legend"><i className="high" />Arriba de la media <i className="low" />Debajo de la media</span></div></div>
     {!sorted.length ? <EmptyState>No hay información en el alcance seleccionado.</EmptyState> : <div className="table-scroll dm-week-table"><table>
       <thead><tr><th>#</th><th>{level}</th>{weeks.map(value => <th key={value}>Sem {value}</th>)}<th>Total</th></tr></thead>
       <tbody>{sorted.map((score,index) => { const name = 'dm' in score ? score.dm : score.region; return <tr key={name}>
         <td><span className={`rank-badge ${index === 0 ? '' : index >= sorted.length - 2 ? 'needs-focus' : ''}`}>{index + 1}</span></td>
         <td><strong>{name}</strong></td>
-        {weeks.map(value => <td key={value}>{formatMetric(metric,score.weekly[value] ?? 0)}</td>)}
-        <td><strong>{formatMetric(metric,metricValue(metric,score.units,score.usd))}</strong></td>
+        {weeks.map(value => { const scoreValue = score.weekly[value] ?? 0; return <td key={value} className={heatClass(scoreValue,weeklyAverages.get(value) ?? 0)}>{formatMetric(metric,scoreValue)}</td> })}
+        <td className={heatClass(metricValue(metric,score.units,score.usd),totalAverage)}><strong>{formatMetric(metric,metricValue(metric,score.units,score.usd))}</strong></td>
       </tr>})}</tbody>
-      <tfoot><tr><td>—</td><td><strong>Promedio de la selección</strong><small>{sorted.length} {level === 'DM' ? 'distritos' : 'regiones'}</small></td>{weeks.map(value => <td key={value}><strong>{formatMetric(metric,average(sorted.map(score => score.weekly[value] ?? 0)))}</strong></td>)}<td><strong>{formatMetric(metric,average(sorted.map(score => metricValue(metric,score.units,score.usd))))}</strong></td></tr></tfoot>
+      <tfoot><tr><td>—</td><td><strong>Promedio · {scopeLabel}</strong></td>{weeks.map(value => <td key={value}><strong>{formatMetric(metric,weeklyAverages.get(value) ?? 0)}</strong></td>)}<td><strong>{formatMetric(metric,totalAverage)}</strong></td></tr></tfoot>
     </table></div>}
   </section>
 }
@@ -473,6 +471,7 @@ export function App() {
   const leadingStore = [...storeScores].sort((a,b) => metricValue(metric,b.units,b.usd) - metricValue(metric,a.units,a.usd))[0]
   const isNationalScope = region === 'Todas' && dm === 'Todos' && cc === 'Todos'
   const inspirationTotal = bestDm ? metricValue(metric,bestDm.units,bestDm.usd) : metric === 'usd' ? totalUsd : totalUnits
+  const benchmarkScopeLabel = dm !== 'Todos' ? `${region !== 'Todas' ? `${region} · ` : ''}${dm}` : region !== 'Todas' ? region : 'Todas las regiones'
 
   return <div className="app-shell">
     <header className="topbar">
@@ -515,7 +514,7 @@ export function App() {
         <InspirationPanel leader={leaderName ?? (isNationalScope ? recognition.director.fullName : 'Equipo')} total={inspirationTotal} metric={metric} benchmark={leadingStore?.benchmark} isNational={isNationalScope} />
       </section>
 
-      <ScopeWeekTable scores={region === 'Todas' && dm === 'Todos' ? regionWeekScores : dmWeekScores} metric={metric} weeks={visibleWeeks} level={region === 'Todas' && dm === 'Todos' ? 'Región' : 'DM'} />
+      <ScopeWeekTable scores={region === 'Todas' && dm === 'Todos' ? regionWeekScores : dmWeekScores} metric={metric} weeks={visibleWeeks} level={region === 'Todas' && dm === 'Todos' ? 'Región' : 'DM'} scopeLabel={benchmarkScopeLabel} />
 
       <div className="ranking-toolbar"><div><p className="eyebrow">Tiendas</p><h2>{compactStoreScope ? 'Portafolio seleccionado' : 'Top y foco operativo'}</h2></div><button type="button" className="pdf-action" onClick={async () => { const { createExecutivePdf } = await import('./pdf'); createExecutivePdf({ data,view,metric,month,weeks:selectedWeeks,region,dm,cc,groups:selectedGroups,stores:scopeStores }) }}><FileDown size={17} />Generar PDF carta · 1 hoja</button></div>
       {compactStoreScope
