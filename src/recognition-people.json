@@ -1,0 +1,18 @@
+{
+  "director": {
+    "match": "Jorge Alcantar",
+    "displayName": "Jorge",
+    "fullName": "Jorge Alcantar",
+    "role": "DM",
+    "photo": "assets/recognition/jorge-alcantar.webp"
+  },
+  "people": [
+    { "match": "Jorge Alcantar", "displayName": "Jorge", "fullName": "Jorge Alcantar", "role": "DM", "photo": "assets/recognition/jorge-alcantar.webp" },
+    { "match": "Enrique Cesar Flores", "displayName": "Enrique", "fullName": "Enrique César Flores", "role": "DM", "photo": "assets/recognition/enrique-flores.webp" },
+    { "match": "Nancy Carolina Rodriguez Medina", "displayName": "Nancy", "fullName": "Nancy Carolina Rodríguez Medina", "role": "DM", "photo": "assets/recognition/nancy-rodriguez.webp" },
+    { "match": "Vanessa Carreño Rios", "displayName": "Vanessa", "fullName": "Vanessa Carreño Ríos", "role": "DM", "photo": "assets/recognition/vanessa-carreno.webp" },
+    { "match": "Veronica Garcia Ortega", "displayName": "Verónica", "fullName": "Verónica García Ortega", "role": "DM", "photo": "assets/recognition/veronica-garcia.webp" },
+    { "match": "Yazmin Chabela Guadarrama", "displayName": "Mina", "fullName": "Yazmin Chabela Guadarrama", "role": "DM", "photo": "assets/recognition/yazmin-chabela.webp" },
+    { "match": "Yazmin Haydee Garcia Gonzalez", "displayName": "Yazmin", "fullName": "Yazmin Haydee García González", "role": "DM", "photo": "assets/recognition/yazmin-haydee.webp" }
+  ]
+}

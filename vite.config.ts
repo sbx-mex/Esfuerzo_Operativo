@@ -36,12 +36,12 @@ export default defineConfig({
           {
             urlPattern:/\/data\/dashboard\.json$/,
             handler:'NetworkFirst',
-            options:{ cacheName:'esfuerzo-data-v2', networkTimeoutSeconds:3, expiration:{ maxEntries:2, maxAgeSeconds:86400 } },
+            options:{ cacheName:'esfuerzo-data-v3', networkTimeoutSeconds:3, expiration:{ maxEntries:2, maxAgeSeconds:86400 } },
           },
           {
             urlPattern:({ request }: { request: Request }) => request.destination === 'image',
             handler:'CacheFirst',
-            options:{ cacheName:'esfuerzo-images-v2', expiration:{ maxEntries:8, maxAgeSeconds:2592000 } },
+            options:{ cacheName:'esfuerzo-images-v3', expiration:{ maxEntries:16, maxAgeSeconds:2592000 } },
           },
         ],
       },

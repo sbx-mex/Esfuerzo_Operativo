@@ -8,6 +8,7 @@ import {
 import { loadDashboard } from './data'
 import type { DashboardData, DailyRow, DmScore, Metric, ProductGroup, StoreScore, View } from './types'
 import inspiration from './juntemonos-visual.json'
+import recognition from './recognition-people.json'
 
 const groupColumn: Record<ProductGroup, 4 | 5 | 6> = {
   "Cake Pop's":4,
@@ -135,15 +136,32 @@ function ScopeWeekTable({ scores, metric, weeks, level }: { scores:Array<DmWeekS
   </section>
 }
 
-function InspirationPanel({ leader, total, metric, benchmark }: { leader:string; total:number; metric:Metric; benchmark?:string }) {
+interface RecognitionPerson { displayName:string; fullName:string; role:string; photo:string }
+
+function normalizeName(value:string) {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es-MX').replace(/[^a-z0-9]+/g,' ').trim()
+}
+
+function recognitionFor(leader:string, isNational:boolean):RecognitionPerson | null {
+  const key = normalizeName(leader)
+  return recognition.people.find(person => normalizeName(person.match) === key) ?? (isNational && !key ? recognition.director : null)
+}
+
+function InspirationPanel({ leader, total, metric, benchmark, isNational }: { leader:string; total:number; metric:Metric; benchmark?:string; isNational:boolean }) {
+  const person = recognitionFor(leader,isNational)
+  const displayName = person?.displayName ?? leader.split(/\s+/)[0] ?? 'Equipo'
   return <article className="inspiration-card" aria-label="Mensaje Juntémonos Más">
-    <div className="inspiration-mark"><Users size={24} /><span>{inspiration.eyebrow}</span></div>
-    <p className="eyebrow">Impulso que inspira</p>
-    <h2>{leader}, gracias por marcar el ritmo.</h2>
-    <p>El portafolio suma <strong>{formatMetric(metric,total)} {metricLabel(metric)}</strong> en esta selección.</p>
-    <div className="inspiration-message"><Sparkles size={20} /><div><strong>{inspiration.title}</strong><span>{inspiration.message}</span></div></div>
-    {benchmark && <div className="benchmark-note"><Lightbulb size={17} /><span><strong>Lo que funciona:</strong> {benchmark}</span></div>}
-    <small>{inspiration.closing} · {inspiration.badge}</small>
+    <div className="recognition-photo">{person ? <img src={`${import.meta.env.BASE_URL}${person.photo}`} alt={`${person.fullName} · ${person.role}`} width="480" height="600" loading="lazy" decoding="async" /> : <span aria-hidden="true">{displayName.slice(0,1)}</span>}</div>
+    <div className="inspiration-copy">
+      <div className="inspiration-mark"><Users size={21} /><span>{inspiration.eyebrow}</span></div>
+      <p className="eyebrow">Impulso que inspira</p>
+      <h2>{displayName}, gracias por marcar el ritmo.</h2>
+      {person && <p className="recognition-role">{person.fullName} · {person.role}</p>}
+      <p>El portafolio suma <strong>{formatMetric(metric,total)} {metricLabel(metric)}</strong> en esta selección.</p>
+      <div className="inspiration-message"><Sparkles size={20} /><div><strong>{inspiration.title}</strong><span>{inspiration.message}</span></div></div>
+      {benchmark && <div className="benchmark-note"><Lightbulb size={17} /><span><strong>Lo que funciona:</strong> {benchmark}</span></div>}
+      <small>{inspiration.closing} · {inspiration.badge}</small>
+    </div>
   </article>
 }
 
@@ -177,12 +195,27 @@ function Filters({
     : selectedWeeks.size === 1
       ? `Semana ${[...selectedWeeks][0]}`
       : `${selectedWeeks.size} semanas`
+  const scopeLevel = cc !== 'Todos' ? 'Tienda' : dm !== 'Todos' ? 'DM' : region !== 'Todas' ? 'Región' : 'Todas'
   function toggleWeek(value:number) {
     const next = new Set(selectedWeeks)
     if (next.has(value)) next.delete(value)
     else next.add(value)
     setSelectedWeeks(next)
   }
+  function selectDm(value:string) {
+    setCc('Todos')
+    setDm(value)
+    if (value === 'Todos') return
+    const match = data.directory.find(item => item.dm === value)
+    if (match) setRegion(match.region)
+  }
+  function selectStore(value:string) {
+    setCc(value)
+    if (value === 'Todos') return
+    const match = data.directory.find(item => item.cc === value)
+    if (match) { setRegion(match.region); setDm(match.dm) }
+  }
+  function resetScope() { setRegion('Todas'); setDm('Todos'); setCc('Todos') }
   return <section className="filters" aria-label="Filtros del tablero">
     <div className="filter-topline">
       <p className="filter-context">{view === 'merch' ? 'Impulso Merch · motor independiente' : `${selectedGroups.size} de 3 familias · meta conjunta +50`}</p>
@@ -191,15 +224,16 @@ function Filters({
         <button type="button" className={metric === 'total' ? 'active' : ''} onClick={() => setMetric('total')} aria-pressed={metric === 'total'}>Unidades Totales</button>
       </div>
     </div>
+    <div className="scope-guide" id="scope-guide"><span className="scope-guide-icon"><CircleGauge size={16} /></span><p><strong>Elige hasta dónde quieres consultar.</strong> Puedes ver <b>Todas</b>, avanzar por <b>Región</b> y <b>DM</b>, o ir directo a una <b>Tienda</b>.</p><span className="scope-current">Vista: {scopeLevel}</span>{scopeLevel !== 'Todas' && <button type="button" onClick={resetScope}>Ver todas</button>}</div>
     <div className="filter-grid">
       <label>Mes<select value={month} onChange={event => { setMonth(event.target.value); setSelectedWeeks(new Set()) }}><option>Todos</option>{data.meta.months.map(value => <option key={value}>{value}</option>)}</select></label>
       <div className="week-field"><span>Semana</span><details className="week-picker"><summary>{weekLabel}<ChevronDown size={16} /></summary><div className="week-options">
         <button type="button" className={selectedWeeks.size === 0 ? 'active' : ''} onClick={() => setSelectedWeeks(new Set())}>Todas las semanas</button>
         {availableWeeks.map(value => <button type="button" key={value} className={selectedWeeks.has(value) ? 'active' : ''} onClick={() => toggleWeek(value)}><span className="week-option-label"><span className="week-checkbox">{selectedWeeks.has(value) && <Check size={13} />}</span>Semana {value}</span></button>)}
       </div></details></div>
-      <label>Región<select value={region} onChange={event => { setRegion(event.target.value); setDm('Todos'); setCc('Todos') }}><option>Todas</option>{regions.map(value => <option key={value}>{value}</option>)}</select></label>
-      <label>DM<select value={dm} onChange={event => { setDm(event.target.value); setCc('Todos') }}><option>Todos</option>{dms.map(value => <option key={value}>{value}</option>)}</select></label>
-      <label className="store-filter">Tienda<select value={cc} onChange={event => setCc(event.target.value)}><option value="Todos">Todas las tiendas</option>{stores.map(item => <option key={item.cc} value={item.cc}>{item.store} · {item.cc}</option>)}</select></label>
+      <label>Región<select aria-describedby="scope-guide" value={region} onChange={event => { setRegion(event.target.value); setDm('Todos'); setCc('Todos') }}><option>Todas</option>{regions.map(value => <option key={value}>{value}</option>)}</select></label>
+      <label>DM<select aria-describedby="scope-guide" value={dm} onChange={event => selectDm(event.target.value)}><option>Todos</option>{dms.map(value => <option key={value}>{value}</option>)}</select></label>
+      <label className="store-filter">Tienda<select aria-describedby="scope-guide" value={cc} onChange={event => selectStore(event.target.value)}><option value="Todos">Todas las tiendas</option>{stores.map(item => <option key={item.cc} value={item.cc}>{item.store} · {item.cc}</option>)}</select></label>
     </div>
     {view !== 'merch' && <div className="product-filter"><div><span>Familias activas</span><small>Selección múltiple</small></div><div className="product-buttons">
       {data.meta.groups.map(group => { const Icon = groupIcon[group]; const active = selectedGroups.has(group); return <button type="button" key={group} className={active ? 'active' : ''} onClick={() => { const next = new Set(selectedGroups); if (active && next.size > 1) next.delete(group); else next.add(group); setSelectedGroups(next) }} aria-pressed={active}><Icon size={17} />{group}{active && <Check size={14} />}</button> })}
@@ -240,8 +274,23 @@ export function App() {
     return () => window.removeEventListener('hashchange',onHashChange)
   },[])
 
+  useEffect(() => {
+    if (!data) return
+    if (region !== 'Todas' && !data.directory.some(item => item.region === region)) {
+      setRegion('Todas'); setDm('Todos'); setCc('Todos'); return
+    }
+    if (dm !== 'Todos' && !data.directory.some(item => item.dm === dm && (region === 'Todas' || item.region === region))) {
+      setDm('Todos'); setCc('Todos'); return
+    }
+    if (cc !== 'Todos' && !data.directory.some(item => item.cc === cc && (dm === 'Todos' || item.dm === dm))) setCc('Todos')
+    const rows = view === 'merch' ? data.merch : data.daily
+    if (month !== 'Todos' && !rows.some(row => row[1] === month)) { setMonth('Todos'); setSelectedWeeks(new Set()) }
+  },[data,view,region,dm,cc,month])
+
   function changeView(next: View) {
     setView(next)
+    setMonth('Todos')
+    setSelectedWeeks(new Set())
     history.replaceState(null,'',`#${next}`)
     window.scrollTo({ top:0, behavior:'smooth' })
   }
@@ -409,6 +458,8 @@ export function App() {
   const leaderName = cc !== 'Todos' ? scopeStores[0]?.dm : bestDm?.dm
   const leadingStore = [...storeScores].sort((a,b) => metricValue(metric,b.units,b.usd) - metricValue(metric,a.units,a.usd))[0]
   const scopeRegionLabel = region === 'Todas' ? 'Todas las regiones' : region
+  const isNationalScope = region === 'Todas' && dm === 'Todos' && cc === 'Todos'
+  const inspirationTotal = bestDm ? metricValue(metric,bestDm.units,bestDm.usd) : metric === 'usd' ? totalUsd : totalUnits
 
   return <div className="app-shell">
     <header className="topbar">
@@ -448,7 +499,7 @@ export function App() {
 
       <section className="two-column">
         <article className="panel trend-panel"><div className="panel-heading"><div><p className="eyebrow">Avance diario</p><h2>El ritmo al corte.</h2><p>Los últimos 7 días disponibles dentro de tu selección.</p></div><span className="status-chip">{lastPoint ? shortDate(lastPoint.date) : 'Sin corte'}</span></div><TrendChart points={dailyPoints} metric={metric} /></article>
-        <InspirationPanel leader={leaderName ?? 'Equipo'} total={bestDm ? metricValue(metric,bestDm.units,bestDm.usd) : metric === 'usd' ? totalUsd : totalUnits} metric={metric} benchmark={leadingStore?.benchmark} />
+        <InspirationPanel leader={leaderName ?? (isNationalScope ? recognition.director.fullName : 'Equipo')} total={inspirationTotal} metric={metric} benchmark={leadingStore?.benchmark} isNational={isNationalScope} />
       </section>
 
       <ScopeWeekTable scores={region === 'Todas' && dm === 'Todos' ? regionWeekScores : dmWeekScores} metric={metric} weeks={visibleWeeks} level={region === 'Todas' && dm === 'Todos' ? 'Región' : 'DM'} />

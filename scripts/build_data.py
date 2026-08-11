@@ -25,7 +25,7 @@ MERCH_SOURCE = DATA / "Esfuerzo operativo_merch.csv"
 DIRECTORY_SOURCE = DATA / "Directorio.xlsx"
 OUTPUT = PUBLIC / "dashboard.json"
 AUDIT_OUTPUT = PUBLIC / "data-audit.json"
-VERSION = "1.3.0"
+VERSION = "1.4.0"
 
 MAIN_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
