@@ -255,6 +255,7 @@ export function App() {
   const [data,setData] = useState<DashboardData | null>(null)
   const [error,setError] = useState('')
   const [retryKey,setRetryKey] = useState(0)
+  const [isRefreshing,setIsRefreshing] = useState(false)
   const [view,setView] = useState<View>(parseView)
   const [metric,setMetric] = useState<Metric>('usd')
   const [month,setMonth] = useState('Todos')
@@ -269,12 +270,13 @@ export function App() {
   useEffect(() => {
     const controller = new AbortController()
     setError('')
-    loadDashboard(controller.signal).then(payload => {
+    if (retryKey > 0) setIsRefreshing(true)
+    loadDashboard(controller.signal,retryKey > 0).then(payload => {
       setData(payload)
     }).catch(loadError => {
       if (loadError instanceof DOMException && loadError.name === 'AbortError') return
       setError(loadError instanceof Error ? loadError.message : 'No fue posible cargar la información.')
-    })
+    }).finally(() => setIsRefreshing(false))
     return () => controller.abort()
   },[retryKey])
 
@@ -483,7 +485,9 @@ export function App() {
         <button type="button" className={view === 'operativo' ? 'active' : ''} onClick={() => changeView('operativo')}><TrendingUp size={17} />Operativo</button>
         <button type="button" className={view === 'merch' ? 'active' : ''} onClick={() => changeView('merch')}><ShoppingBag size={17} />Merch</button>
       </nav>
-      <div className="update-badge"><span>{view === 'merch' ? 'Motor Merch' : 'Motor operativo'}</span><strong>{shortDate(currentCutoff)}</strong></div>
+      <button type="button" className="update-badge" onClick={() => setRetryKey(value => value + 1)} aria-label="Actualizar datos" title="Consultar la última actualización">
+        <span>{isRefreshing ? 'Actualizando…' : view === 'merch' ? 'Motor Merch' : 'Motor operativo'}</span><strong>{shortDate(currentCutoff)}</strong><RefreshCw size={14} className={isRefreshing ? 'spinning' : ''} />
+      </button>
     </header>
 
     <main>
