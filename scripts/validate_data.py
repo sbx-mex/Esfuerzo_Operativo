@@ -19,6 +19,11 @@ def main() -> None:
     directory_cc = [item.get("cc") for item in directory]
     if len(directory_cc) != len(set(directory_cc)):
         errors.append("El directorio contiene CC duplicados")
+    required_directory = {"cc", "store", "region", "dm", "storeType", "benchmark"}
+    if any(set(item) != required_directory for item in directory):
+        errors.append("El directorio publicado no conserva Región, DM, Tipo Tienda y Benchmark")
+    if any(not item.get("storeType") for item in directory):
+        errors.append("El directorio contiene tiendas sin Tipo Tienda")
     if audit.get("status") != "ok":
         errors.append("La auditoría del motor no terminó en estado ok")
     checks = audit.get("checks", {})

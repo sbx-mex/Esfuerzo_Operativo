@@ -13,6 +13,9 @@ function validateDashboard(payload: DashboardData) {
   if (!Array.isArray(payload.directory) || !payload.directory.length) {
     throw new Error('El Directorio no contiene tiendas válidas.')
   }
+  if (payload.directory.some(item => !item.cc || !item.store || !item.region || !item.dm || !item.storeType || typeof item.benchmark !== 'string')) {
+    throw new Error('El Directorio no conserva CC, Tienda, Región, DM, Tipo Tienda y Benchmark.')
+  }
   if (!Array.isArray(payload.daily) || !sameColumns(payload.dailyColumns,expectedDailyColumns)) {
     throw new Error('El CSV operativo no tiene la estructura publicada esperada.')
   }

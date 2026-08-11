@@ -1,6 +1,6 @@
 # Esfuerzo Operativo PWA
 
-Dashboard ejecutivo y operativo para consultar impulso diario, USD, avance por DM, Bottom 15 e Impulso Merch.
+Herramienta ejecutiva de consulta rápida para reconocer avance, comparar prácticas y ubicar la siguiente prioridad.
 
 ## Lectura de la métrica
 
@@ -16,7 +16,7 @@ El Excel/CSV sigue siendo el motor. Sustituye los tres archivos en `data/` y el 
 
 1. Lee CSV UTF-16 o UTF-8 con preámbulo de cubo.
 2. Homologa Cake Pop's, Galletas y Dona G&G.
-3. Cruza cada CeCo contra Directorio.xlsx.
+3. Cruza cada CeCo contra `Directorio.xlsx` con `CC`, `Tienda`, `Región`, `DM` y `Tipo Tienda`.
 4. Reconcilia los totales y publica JSON compacto.
 5. Activa automáticamente el despliegue de GitHub Pages.
 
@@ -31,6 +31,10 @@ Cada CSV se puede reemplazar por separado conservando estos nombres canónicos:
 
 La fecha visible se calcula de forma independiente: Operativo muestra el último día
 del primer CSV y Merch el último día del segundo.
+
+El Directorio admite más filas y regiones. Una columna opcional `Lo que funciona`
+habilita el benchmark por tienda; también acepta los encabezados `Benchmark` o
+`Práctica destacada`.
 
 ## GitHub Pages
 

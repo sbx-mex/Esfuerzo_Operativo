@@ -1,6 +1,6 @@
 {
   "status": "ok",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "sources": {
     "Esfuerzo operativo.csv": {
       "sourceRows": 19215,
@@ -48,6 +48,14 @@
     },
     "Directorio.xlsx": {
       "records": 72,
+      "regions": 1,
+      "districts": 6,
+      "storeTypes": [
+        "Cafe",
+        "Drive_Thru",
+        "Kiosko"
+      ],
+      "benchmarkColumn": false,
       "sha256": "1a87b7a49dbba6732f0a5ed2ef54243edd296ded49f7144c2281d709101c5eaf"
     }
   },

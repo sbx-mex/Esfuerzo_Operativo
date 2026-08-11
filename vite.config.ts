@@ -2,11 +2,11 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
-const repositoryName = process.env.GITHUB_REPOSITORY?.split('/')[1]
+const repositoryName = process.env.GITHUB_REPOSITORY?.split('/').at(1)
 const publicBase = repositoryName ? `/${repositoryName}/` : './'
 
 export default defineConfig({
-  base:publicBase,
+  base: publicBase,
   plugins:[
     react(),
     VitePWA({
@@ -14,7 +14,7 @@ export default defineConfig({
       manifest:{
         name:'Esfuerzo Operativo',
         short_name:'Esfuerzo',
-        description:'Seguimiento operativo de impulso, USD y Merch para Centro Norte.',
+        description:'Consulta ejecutiva de impulso, USD y Merch por región, distrito y tienda.',
         theme_color:'#006241',
         background_color:'#f7f3eb',
         display:'standalone',
@@ -39,7 +39,7 @@ export default defineConfig({
             options:{ cacheName:'esfuerzo-data-v2', networkTimeoutSeconds:3, expiration:{ maxEntries:2, maxAgeSeconds:86400 } },
           },
           {
-            urlPattern:({ request }) => request.destination === 'image',
+            urlPattern:({ request }: { request: Request }) => request.destination === 'image',
             handler:'CacheFirst',
             options:{ cacheName:'esfuerzo-images-v2', expiration:{ maxEntries:8, maxAgeSeconds:2592000 } },
           },

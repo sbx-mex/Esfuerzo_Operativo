@@ -7,6 +7,8 @@ export interface DirectoryStore {
   store:string
   region:string
   dm:string
+  storeType:string
+  benchmark:string
 }
 
 export type DailyRow = [date:string, month:string, week:number, cc:string, cakePop:number, cookies:number, dona:number]

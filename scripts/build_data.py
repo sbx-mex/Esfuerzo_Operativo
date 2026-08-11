@@ -25,7 +25,7 @@ MERCH_SOURCE = DATA / "Esfuerzo operativo_merch.csv"
 DIRECTORY_SOURCE = DATA / "Directorio.xlsx"
 OUTPUT = PUBLIC / "dashboard.json"
 AUDIT_OUTPUT = PUBLIC / "data-audit.json"
-VERSION = "1.2.0"
+VERSION = "1.3.0"
 
 MAIN_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -193,13 +193,17 @@ def read_directory(path: Path) -> tuple[list[dict[str, str]], dict[str, dict[str
         raise ValueError("Directorio.xlsx no contiene hojas")
     selected_rows = next((rows for rows in sheets.values() if rows and "cc" in [normalized_header(v) for v in rows[0]]), None)
     if not selected_rows:
-        raise ValueError("Directorio.xlsx: no se encontró la tabla CC, Tienda, Región, DM")
+        raise ValueError("Directorio.xlsx: no se encontró la tabla CC, Tienda, Región, DM, Tipo Tienda")
     header = [normalized_header(value) for value in selected_rows[0]]
-    required = {"cc", "tienda", "region", "dm"}
+    required = {"cc", "tienda", "region", "dm", "tipotienda"}
     missing = sorted(required - set(header))
     if missing:
         raise ValueError(f"Directorio.xlsx: faltan columnas {missing}")
     indices = {name: header.index(name) for name in required}
+    benchmark_header = next(
+        (name for name in ("loquefunciona", "benchmark", "practicadestacada") if name in header),
+        None,
+    )
     directory: list[dict[str, str]] = []
     by_cc: dict[str, dict[str, str]] = {}
     duplicate_cc: list[str] = []
@@ -213,8 +217,10 @@ def read_directory(path: Path) -> tuple[list[dict[str, str]], dict[str, dict[str
             "store": clean(padded[indices["tienda"]]),
             "region": clean(padded[indices["region"]]),
             "dm": clean(padded[indices["dm"]]),
+            "storeType": clean(padded[indices["tipotienda"]]),
+            "benchmark": clean(padded[header.index(benchmark_header)]) if benchmark_header else "",
         }
-        if not all(record.values()):
+        if not all(record[field] for field in ("cc", "store", "region", "dm", "storeType")):
             raise ValueError(f"Directorio.xlsx fila {row_number}: contiene campos vacíos")
         if cc in by_cc:
             duplicate_cc.append(cc)
@@ -432,7 +438,14 @@ def build() -> tuple[dict[str, object], dict[str, object]]:
         "sources": {
             OPERATIONAL_SOURCE.name: {**operational_profile, "sha256": file_hash(OPERATIONAL_SOURCE)},
             MERCH_SOURCE.name: {**merch_profile, "sha256": file_hash(MERCH_SOURCE)},
-            DIRECTORY_SOURCE.name: {"records": len(directory), "sha256": file_hash(DIRECTORY_SOURCE)},
+            DIRECTORY_SOURCE.name: {
+                "records": len(directory),
+                "regions": len({item["region"] for item in directory}),
+                "districts": len({item["dm"] for item in directory}),
+                "storeTypes": sorted({item["storeType"] for item in directory}),
+                "benchmarkColumn": any(item["benchmark"] for item in directory),
+                "sha256": file_hash(DIRECTORY_SOURCE),
+            },
         },
         "checks": {
             "directoryStores": len(directory),

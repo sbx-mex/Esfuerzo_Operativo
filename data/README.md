@@ -4,7 +4,12 @@ Reemplaza únicamente estos archivos conservando el nombre:
 
 1. `Esfuerzo operativo.csv`: detalle diario por producto.
 2. `Esfuerzo operativo_merch.csv`: unidades Merch vendidas por día.
-3. `Directorio.xlsx`: columnas `CC`, `Tienda`, `Región`, `DM`.
+3. `Directorio.xlsx`: columnas obligatorias `CC`, `Tienda`, `Región`, `DM`, `Tipo Tienda`.
+
+Puedes agregar una sexta columna opcional llamada `Lo que funciona` (también se
+aceptan `Benchmark` o `Práctica destacada`). El motor la cruza por CC y la muestra
+como referencia comparable. Las filas pueden aumentar o disminuir y nuevas regiones
+se incorporan automáticamente a los filtros y reportes, sin cambios de código.
 
 Al subir cualquiera de los tres a `main`, GitHub Actions valida CeCo, fechas, duplicados, productos y totales; después actualiza `public/data/dashboard.json` sin editar el sitio.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audita y elimina únicamente rutas explícitas del manifiesto autorizado."""
+"""Elimina obsoletos declarados sin tocar motores, fuentes ni archivos desconocidos."""
 
 from __future__ import annotations
 
@@ -27,6 +27,7 @@ def main() -> None:
     manifest_path = ROOT / "scripts" / "obsolete-files.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     raw_candidates = manifest.get("obsoleteFiles", [])
+    replacements = manifest.get("optimizedReplacements", {})
     if not isinstance(raw_candidates, list) or any(not isinstance(item, str) for item in raw_candidates):
         raise SystemExit("El manifiesto debe contener una lista de rutas")
     if len(raw_candidates) != len(set(raw_candidates)):
@@ -46,6 +47,11 @@ def main() -> None:
             raise SystemExit(f"Ruta fuera del repositorio: {raw}")
         if target.is_dir():
             raise SystemExit(f"Solo se permiten archivos: {raw}")
+        replacement = replacements.get(normalized)
+        if replacement:
+            replacement_path = (ROOT / replacement).resolve()
+            if ROOT not in replacement_path.parents or not replacement_path.is_file():
+                raise SystemExit(f"No existe el reemplazo optimizado de {raw}: {replacement}")
         approved.append((normalized,target))
     removed = []
     for normalized,target in approved:
@@ -53,7 +59,13 @@ def main() -> None:
             target.unlink()
             removed.append(normalized)
     remaining = [normalized for normalized,target in approved if target.is_file()]
-    print(json.dumps({"mode":"apply" if args.apply else "audit", "removed":removed, "remaining":remaining}, ensure_ascii=False))
+    print(json.dumps({
+        "mode":"apply" if args.apply else "audit",
+        "approved": [name for name, _ in approved],
+        "removed":removed,
+        "remaining":remaining,
+        "protected":sorted(PROTECTED),
+    }, ensure_ascii=False))
     if args.check_clean and remaining:
         raise SystemExit(f"Persisten {len(remaining)} archivos obsoletos")
 

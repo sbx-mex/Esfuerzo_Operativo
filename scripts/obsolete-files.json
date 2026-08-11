@@ -6,6 +6,14 @@
     "manifest.json",
     "data/contest-data.js",
     "tools/process_excel.py",
-    "tools/validate_excel_engine.py"
-  ]
+    "tools/validate_excel_engine.py",
+    "public/assets/Esfuerzo_Operativo.png",
+    "public/assets/impulso_merch.png",
+    "public/assets/objetivo_esfuerzo.png"
+  ],
+  "optimizedReplacements": {
+    "public/assets/Esfuerzo_Operativo.png": "public/assets/Esfuerzo_Operativo.webp",
+    "public/assets/impulso_merch.png": "public/assets/impulso_merch.webp",
+    "public/assets/objetivo_esfuerzo.png": "public/assets/objetivo_esfuerzo_operativo.webp"
+  }
 }
