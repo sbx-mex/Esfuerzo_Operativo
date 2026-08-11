@@ -8,6 +8,8 @@ on:
       - "data/Esfuerzo operativo_merch.csv"
       - "data/Directorio.xlsx"
       - "scripts/build_data.py"
+      - "scripts/audit_release.py"
+      - "scripts/test_data_engines.py"
       - "scripts/validate_data.py"
       - ".github/workflows/sync-data.yml"
   workflow_dispatch:
@@ -37,7 +39,9 @@ jobs:
       - name: Compilar y auditar los tres motores
         run: |
           python scripts/build_data.py --check
+          python scripts/test_data_engines.py
           python scripts/validate_data.py
+          python scripts/audit_release.py
 
       - name: Resumen visible de los CSV
         run: |
@@ -48,6 +52,15 @@ jobs:
           for name, profile in audit['sources'].items():
               if name.endswith('.csv'):
                   print(f"{name}: {profile['validRows']} filas · {profile['stores']} tiendas · {profile['dateRange'][0]} a {profile['dateRange'][1]}")
+          summary = Path(__import__('os').environ['GITHUB_STEP_SUMMARY'])
+          latest = audit['checks']['dateRange'][-1]
+          summary.write_text(
+              "## Motores validados\n\n"
+              f"- Corte publicado: **{latest}**\n"
+              f"- Estado: **{audit['status']}**\n"
+              "- El despliegue de Pages se iniciará al terminar este workflow.\n",
+              encoding='utf-8',
+          )
           PY
 
       - name: Validar diferencias

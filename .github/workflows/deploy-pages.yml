@@ -12,6 +12,9 @@ on:
       - "vite.config.ts"
       - "tsconfig*.json"
       - ".github/workflows/deploy-pages.yml"
+  workflow_run:
+    workflows: ["Sincronizar motores operativos"]
+    types: [completed]
   workflow_dispatch:
 
 # IMPORTANTE: Settings > Pages > Build and deployment debe usar "GitHub Actions".
@@ -28,10 +31,16 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Descargar repositorio
         uses: actions/checkout@v5
+        with:
+          # workflow_run inicia con el SHA que disparó la sincronización. Al
+          # terminar, el bot ya publicó el JSON nuevo en la rama principal.
+          ref: ${{ github.event_name == 'workflow_run' && github.event.repository.default_branch || github.ref }}
 
       - name: Preparar Python
         uses: actions/setup-python@v6
@@ -64,6 +73,7 @@ jobs:
           npm ci
           npm run check
           npm run build
+          python scripts/audit_release.py --dist
 
       - name: Confirmar artefacto compilado
         run: |
