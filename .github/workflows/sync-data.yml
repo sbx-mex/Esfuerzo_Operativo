@@ -53,15 +53,27 @@ jobs:
               if name.endswith('.csv'):
                   print(f"{name}: {profile['validRows']} filas · {profile['stores']} tiendas · {profile['dateRange'][0]} a {profile['dateRange'][1]}")
           summary = Path(__import__('os').environ['GITHUB_STEP_SUMMARY'])
-          latest = audit['checks']['dateRange'][-1]
+          operativo = audit['sources']['Esfuerzo operativo.csv']
+          merch = audit['sources']['Esfuerzo operativo_merch.csv']
+          directorio = audit['sources']['Directorio.xlsx']
           summary.write_text(
               "## Motores validados\n\n"
-              f"- Corte publicado: **{latest}**\n"
+              f"- Operativo: **{operativo['dateRange'][-1]}** · {operativo['validRows']} filas\n"
+              f"- Merch: **{merch['dateRange'][-1]}** · {merch['validRows']} filas\n"
+              f"- Directorio: **{directorio['records']} tiendas** · {directorio['regions']} regiones\n"
               f"- Estado: **{audit['status']}**\n"
               "- El despliegue de Pages se iniciará al terminar este workflow.\n",
               encoding='utf-8',
           )
           PY
+
+      - name: Conservar evidencia de auditoría
+        uses: actions/upload-artifact@v4
+        with:
+          name: auditoria-motores-${{ github.run_number }}
+          path: public/data/data-audit.json
+          retention-days: 14
+          if-no-files-found: error
 
       - name: Validar diferencias
         run: git diff --check
