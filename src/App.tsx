@@ -114,7 +114,7 @@ function StoreTable({ scores, metric, title, message, trends, ascending = false,
           : trend ? `${trend.delta > 0 ? '+' : ''}${formatMetric(metric,trend.delta)}` : '—'
         return <tr key={score.cc}>
           <td><span className={`rank-badge ${ascending && index < 3 ? 'needs-focus' : ''}`}>{index + 1}</span></td>
-          <td><strong>{score.store}</strong><small className="store-meta">{score.storeType}{score.benchmark ? ` · ${score.benchmark}` : ''}</small></td>
+          <td><strong>{score.store}</strong>{score.benchmark && <small className="store-meta">Lo que funciona · {score.benchmark}</small>}</td>
           <td>{metric === 'usd' ? <div className="inline-meter"><span style={{ width:`${value / max * 100}%` }} /><strong>{decimalFormatter.format(score.usd)}</strong></div> : decimalFormatter.format(score.usd)}</td>
           <td>{metric === 'total' ? <div className="inline-meter"><span style={{ width:`${value / max * 100}%` }} /><strong>{integerFormatter.format(score.units)}</strong></div> : integerFormatter.format(score.units)}</td>
           <td><span className={`trend-pill ${direction}`}><TrendIcon size={14} />{trendText}</span></td>
@@ -186,16 +186,17 @@ function TargetIcon() { return <span className="objective-icon"><CircleGauge siz
 
 function Filters({
   data, view, metric, setMetric, month, setMonth, selectedWeeks, setSelectedWeeks,
-  region, setRegion, dm, setDm, cc, setCc, selectedGroups, setSelectedGroups,
+  region, setRegion, dm, setDm, storeType, setStoreType, cc, setCc, selectedGroups, setSelectedGroups,
 }:{
   data:DashboardData; view:View; metric:Metric; setMetric:(metric:Metric)=>void
   month:string; setMonth:(value:string)=>void; selectedWeeks:Set<number>; setSelectedWeeks:(value:Set<number>)=>void
-  region:string; setRegion:(value:string)=>void; dm:string; setDm:(value:string)=>void; cc:string; setCc:(value:string)=>void
+  region:string; setRegion:(value:string)=>void; dm:string; setDm:(value:string)=>void; storeType:string; setStoreType:(value:string)=>void; cc:string; setCc:(value:string)=>void
   selectedGroups:Set<ProductGroup>; setSelectedGroups:(groups:Set<ProductGroup>)=>void
 }) {
   const regions = useMemo(() => [...new Set(data.directory.map(item => item.region))].sort(), [data])
-  const dms = useMemo(() => [...new Set(data.directory.filter(item => region === 'Todas' || item.region === region).map(item => item.dm))].sort(), [data,region])
-  const stores = useMemo(() => data.directory.filter(item => (region === 'Todas' || item.region === region) && (dm === 'Todos' || item.dm === dm)), [data,region,dm])
+  const dms = useMemo(() => [...new Set(data.directory.filter(item => (region === 'Todas' || item.region === region) && (storeType === 'Todos' || item.storeType === storeType)).map(item => item.dm))].sort(), [data,region,storeType])
+  const storeTypes = useMemo(() => [...new Set(data.directory.filter(item => (region === 'Todas' || item.region === region) && (dm === 'Todos' || item.dm === dm)).map(item => item.storeType))].sort(),[data,region,dm])
+  const stores = useMemo(() => data.directory.filter(item => (region === 'Todas' || item.region === region) && (dm === 'Todos' || item.dm === dm) && (storeType === 'Todos' || item.storeType === storeType)), [data,region,dm,storeType])
   const availableWeeks = useMemo(() => {
     const source = view === 'merch' ? data.merch : data.daily
     return [...new Set(source.filter(row => month === 'Todos' || row[1] === month).map(row => row[2]))].sort((a,b) => a - b)
@@ -205,7 +206,7 @@ function Filters({
     : selectedWeeks.size === 1
       ? `Semana ${[...selectedWeeks][0]}`
       : `${selectedWeeks.size} semanas`
-  const scopeLevel = cc !== 'Todos' ? 'Tienda' : dm !== 'Todos' ? 'DM' : region !== 'Todas' ? 'Región' : 'Todas'
+  const scopeLevel = cc !== 'Todos' ? 'Tienda' : dm !== 'Todos' ? 'DM' : storeType !== 'Todos' ? 'Tipo tienda' : region !== 'Todas' ? 'Región' : 'Todas'
   function toggleWeek(value:number) {
     const next = new Set(selectedWeeks)
     if (next.has(value)) next.delete(value)
@@ -223,9 +224,9 @@ function Filters({
     setCc(value)
     if (value === 'Todos') return
     const match = data.directory.find(item => item.cc === value)
-    if (match) { setRegion(match.region); setDm(match.dm) }
+    if (match) { setRegion(match.region); setDm(match.dm); setStoreType(match.storeType) }
   }
-  function resetScope() { setRegion('Todas'); setDm('Todos'); setCc('Todos') }
+  function resetScope() { setRegion('Todas'); setDm('Todos'); setStoreType('Todos'); setCc('Todos') }
   return <section className="filters" aria-label="Filtros del tablero">
     <div className="filter-topline">
       <div className="metric-toggle" aria-label="Métrica principal">
@@ -233,14 +234,15 @@ function Filters({
         <button type="button" className={metric === 'total' ? 'active' : ''} onClick={() => setMetric('total')} aria-pressed={metric === 'total'}>Unidades Totales</button>
       </div>
     </div>
-    <div className="scope-guide" id="scope-guide"><span className="scope-guide-icon"><CircleGauge size={16} /></span><p><strong>Elige hasta dónde quieres consultar.</strong> Puedes ver <b>Todas</b>, avanzar por <b>Región</b> y <b>DM</b>, o ir directo a una <b>Tienda</b>.</p><span className="scope-current">Vista: {scopeLevel}</span>{scopeLevel !== 'Todas' && <button type="button" onClick={resetScope}>Ver todas</button>}</div>
+    <div className="scope-guide" id="scope-guide"><span className="scope-guide-icon"><CircleGauge size={16} /></span><p><strong>Elige hasta dónde quieres consultar.</strong> Filtra por <b>Región</b>, <b>DM</b> o <b>Tipo tienda</b>; también puedes ir directo a una <b>Tienda</b>.</p><span className="scope-current">Vista: {scopeLevel}</span>{scopeLevel !== 'Todas' && <button type="button" onClick={resetScope}>Ver todas</button>}</div>
     <div className="filter-grid">
       <label>Mes<select value={month} onChange={event => { setMonth(event.target.value); setSelectedWeeks(new Set()) }}><option>Todos</option>{data.meta.months.map(value => <option key={value}>{value}</option>)}</select></label>
       <div className="week-field"><span>Semana</span><details className="week-picker"><summary>{weekLabel}<ChevronDown size={16} /></summary><div className="week-options">
         <button type="button" className={selectedWeeks.size === 0 ? 'active' : ''} onClick={() => setSelectedWeeks(new Set())}>Todas las semanas</button>
         {availableWeeks.map(value => <button type="button" key={value} className={selectedWeeks.has(value) ? 'active' : ''} onClick={() => toggleWeek(value)}><span className="week-option-label"><span className="week-checkbox">{selectedWeeks.has(value) && <Check size={13} />}</span>Semana {value}</span></button>)}
       </div></details></div>
-      <label>Región<select aria-describedby="scope-guide" value={region} onChange={event => { setRegion(event.target.value); setDm('Todos'); setCc('Todos') }}><option>Todas</option>{regions.map(value => <option key={value}>{value}</option>)}</select></label>
+      <label>Región<select aria-describedby="scope-guide" value={region} onChange={event => { setRegion(event.target.value); setDm('Todos'); setStoreType('Todos'); setCc('Todos') }}><option>Todas</option>{regions.map(value => <option key={value}>{value}</option>)}</select></label>
+      <label>Tipo tienda<select aria-describedby="scope-guide" value={storeType} onChange={event => { setStoreType(event.target.value); setCc('Todos') }}><option>Todos</option>{storeTypes.map(value => <option key={value} value={value}>{value.replace(/[_-]+/g,' ')}</option>)}</select></label>
       <label>DM<select aria-describedby="scope-guide" value={dm} onChange={event => selectDm(event.target.value)}><option>Todos</option>{dms.map(value => <option key={value}>{value}</option>)}</select></label>
       <label className="store-filter">Tienda<select aria-describedby="scope-guide" value={cc} onChange={event => selectStore(event.target.value)}><option value="Todos">Todas las tiendas</option>{stores.map(item => <option key={item.cc} value={item.cc}>{item.store} · {item.cc}</option>)}</select></label>
     </div>
@@ -261,6 +263,7 @@ export function App() {
   const [selectedWeeks,setSelectedWeeks] = useState<Set<number>>(new Set())
   const [region,setRegion] = useState('Todas')
   const [dm,setDm] = useState('Todos')
+  const [storeType,setStoreType] = useState('Todos')
   const [cc,setCc] = useState('Todos')
   const [selectedGroups,setSelectedGroups] = useState<Set<ProductGroup>>(() => new Set<ProductGroup>(["Cake Pop's",'Galletas','Dona G&G']))
   const selectedColumns = useMemo(() => [...selectedGroups].map(group => groupColumn[group]),[selectedGroups])
@@ -286,15 +289,16 @@ export function App() {
   useEffect(() => {
     if (!data) return
     if (region !== 'Todas' && !data.directory.some(item => item.region === region)) {
-      setRegion('Todas'); setDm('Todos'); setCc('Todos'); return
+      setRegion('Todas'); setDm('Todos'); setStoreType('Todos'); setCc('Todos'); return
     }
     if (dm !== 'Todos' && !data.directory.some(item => item.dm === dm && (region === 'Todas' || item.region === region))) {
-      setDm('Todos'); setCc('Todos'); return
+      setDm('Todos'); setStoreType('Todos'); setCc('Todos'); return
     }
+    if (storeType !== 'Todos' && !data.directory.some(item => item.storeType === storeType && (region === 'Todas' || item.region === region) && (dm === 'Todos' || item.dm === dm))) { setStoreType('Todos'); setCc('Todos'); return }
     if (cc !== 'Todos' && !data.directory.some(item => item.cc === cc && (dm === 'Todos' || item.dm === dm))) setCc('Todos')
     const rows = view === 'merch' ? data.merch : data.daily
     if (month !== 'Todos' && !rows.some(row => row[1] === month)) { setMonth('Todos'); setSelectedWeeks(new Set()) }
-  },[data,view,region,dm,cc,month])
+  },[data,view,region,dm,storeType,cc,month])
 
   function changeView(next: View) {
     setView(next)
@@ -307,8 +311,9 @@ export function App() {
   const scopeStores = useMemo(() => data?.directory.filter(item =>
     (region === 'Todas' || item.region === region)
     && (dm === 'Todos' || item.dm === dm)
+    && (storeType === 'Todos' || item.storeType === storeType)
     && (cc === 'Todos' || item.cc === cc)
-  ) ?? [],[data,region,dm,cc])
+  ) ?? [],[data,region,dm,storeType,cc])
   const scopeCc = useMemo(() => new Set(scopeStores.map(item => item.cc)),[scopeStores])
 
   const periodMatches = (row: DailyRow | DashboardData['merch'][number]) =>
@@ -491,7 +496,7 @@ export function App() {
       </section>
 
       <div id="tablero" className="dashboard-anchor" />
-      <Filters data={data} view={view} metric={metric} setMetric={setMetric} month={month} setMonth={setMonth} selectedWeeks={selectedWeeks} setSelectedWeeks={setSelectedWeeks} region={region} setRegion={setRegion} dm={dm} setDm={setDm} cc={cc} setCc={setCc} selectedGroups={selectedGroups} setSelectedGroups={setSelectedGroups} />
+      <Filters data={data} view={view} metric={metric} setMetric={setMetric} month={month} setMonth={setMonth} selectedWeeks={selectedWeeks} setSelectedWeeks={setSelectedWeeks} region={region} setRegion={setRegion} dm={dm} setDm={setDm} storeType={storeType} setStoreType={setStoreType} cc={cc} setCc={setCc} selectedGroups={selectedGroups} setSelectedGroups={setSelectedGroups} />
 
       <div className="executive-heading"><div><p className="eyebrow">Datos clave</p><h2>{viewLabel} al corte</h2></div><span>{region === 'Todas' ? 'Región completa' : region}{dm !== 'Todos' ? ` · ${dm}` : ''}</span></div>
       <section className="kpi-grid" aria-label="Resumen ejecutivo">
