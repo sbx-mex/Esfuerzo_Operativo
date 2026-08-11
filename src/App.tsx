@@ -287,6 +287,7 @@ export function App() {
   const change = lastPoint && previousPoint ? lastPoint.value - previousPoint.value : 0
   const bestDm = [...dmScores].sort((a,b) => metricValue(metric,b.units,b.usd) - metricValue(metric,a.units,a.usd))[0]
   const viewLabel = view === 'merch' ? 'Impulso Merch' : view === 'dm' ? 'Resumen DM' : 'Impulso Operativo'
+  const currentCutoff = view === 'merch' ? data.meta.latestMerchDate : data.meta.latestOperationalDate
 
   return <div className="app-shell">
     <header className="topbar">
@@ -299,13 +300,13 @@ export function App() {
         <button type="button" className={view === 'dm' ? 'active' : ''} onClick={() => changeView('dm')}><UsersRound size={17} />Resumen DM</button>
         <button type="button" className={view === 'merch' ? 'active' : ''} onClick={() => changeView('merch')}><ShoppingBag size={17} />Merch</button>
       </nav>
-      <div className="update-badge"><span>Actualizado</span><strong>{shortDate(data.meta.latestDate)}</strong></div>
+      <div className="update-badge"><span>{view === 'merch' ? 'Motor Merch' : 'Motor operativo'}</span><strong>{shortDate(currentCutoff)}</strong></div>
     </header>
 
     <main>
       <section className={`hero ${view === 'merch' ? 'merch' : ''}`}>
         <div className="hero-copy"><p className="eyebrow">Centro Norte · {viewLabel}</p><h1>{view === 'merch' ? 'Cada recomendación cuenta.' : view === 'dm' ? 'Claridad para acompañar.' : 'Impulsamos juntos.'}</h1><p>{view === 'merch' ? 'Sigue el avance diario de Merch y convierte el dato en una conversación operativa.' : view === 'dm' ? 'Una vista simple para reconocer avances, enfocar prioridades y activar el siguiente paso.' : 'Tres familias de producto, una lectura diaria y decisiones más cercanas a la operación.'}</p>
-          <div className="hero-actions"><a href="#tablero">Ver avance <ChevronRight size={17} /></a><span><CalendarDays size={16} /> Corte al {shortDate(data.meta.latestDate)}</span></div>
+          <div className="hero-actions"><a href="#tablero">Ver avance <ChevronRight size={17} /></a><span><CalendarDays size={16} /> Corte al {shortDate(currentCutoff)}</span></div>
         </div>
         <div className="hero-visual"><img src={`${import.meta.env.BASE_URL}assets/${view === 'merch' ? 'impulso_merch.png' : 'Esfuerzo_Operativo.png'}`} alt={view === 'merch' ? 'Guía visual Impulso Merch de la semana' : 'Identidad visual de Esfuerzo Operativo'} loading={view === 'merch' ? 'lazy' : 'eager'} decoding="async" /></div>
       </section>

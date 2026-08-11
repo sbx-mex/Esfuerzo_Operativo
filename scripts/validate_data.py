@@ -34,6 +34,20 @@ def main() -> None:
         errors.append("El total Merch del JSON no reconcilia")
     if data.get("meta", {}).get("latestDate") != checks.get("dateRange", [None, None])[-1]:
         errors.append("La última fecha no coincide con el rango auditado")
+    daily_dates = [row[0] for row in data.get("daily", [])]
+    merch_dates = [row[0] for row in data.get("merch", [])]
+    if not daily_dates or data.get("meta", {}).get("latestOperationalDate") != max(daily_dates):
+        errors.append("La fecha del motor operativo no coincide con sus datos")
+    if not merch_dates or data.get("meta", {}).get("latestMerchDate") != max(merch_dates):
+        errors.append("La fecha del motor Merch no coincide con sus datos")
+    for source_name, profile in audit.get("sources", {}).items():
+        if source_name.endswith(".csv"):
+            if profile.get("exactDuplicates"):
+                errors.append(f"{source_name} contiene duplicados")
+            if profile.get("indicators") != {"USD": profile.get("validRows")}:
+                errors.append(f"{source_name} contiene indicadores distintos de USD")
+            if not profile.get("valueColumn"):
+                errors.append(f"{source_name} no documenta la columna de valor")
     if errors:
         raise SystemExit("\n".join(f"ERROR: {error}" for error in errors))
     print(json.dumps({

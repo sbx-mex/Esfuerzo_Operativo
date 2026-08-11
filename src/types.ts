@@ -16,6 +16,8 @@ export interface DashboardData {
   version:string
   meta:{
     latestDate:string
+    latestOperationalDate:string
+    latestMerchDate:string
     minDate:string
     months:string[]
     weeks:number[]

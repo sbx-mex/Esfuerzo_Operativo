@@ -20,6 +20,24 @@ El Excel/CSV sigue siendo el motor. Sustituye los tres archivos en `data/` y el 
 4. Reconcilia los totales y publica JSON compacto.
 5. Activa automáticamente el despliegue de GitHub Pages.
 
+Los CSV pueden aumentar o disminuir filas. El lector localiza el encabezado real del
+cubo, identifica la columna USD después de `Indicadores`, valida la codificación y
+rechaza encabezados ambiguos, duplicados o indicadores inesperados antes de publicar.
+
+Cada CSV se puede reemplazar por separado conservando estos nombres canónicos:
+
+- `data/Esfuerzo operativo.csv`
+- `data/Esfuerzo operativo_merch.csv`
+
+La fecha visible se calcula de forma independiente: Operativo muestra el último día
+del primer CSV y Merch el último día del segundo.
+
+## GitHub Pages
+
+En **Settings > Pages > Build and deployment > Source** selecciona **GitHub Actions**.
+No uses `Deploy from a branch / main / (root)`: esa modalidad publica `src/main.tsx`
+sin compilar y provoca la pantalla en blanco observada.
+
 ## Desarrollo local
 
 ```bash

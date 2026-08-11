@@ -1,20 +1,48 @@
 {
   "status": "ok",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "sources": {
     "Esfuerzo operativo.csv": {
       "sourceRows": 19215,
       "validRows": 19215,
-      "exactDuplicatesIgnored": 0,
+      "blankRowsIgnored": 0,
+      "summaryRowsIgnored": 0,
+      "exactDuplicates": 0,
       "headerRow": 11,
+      "valueColumn": 8,
+      "rowWidths": {
+        "8": 19215
+      },
+      "indicators": {
+        "USD": 19215
+      },
+      "stores": 72,
+      "dateRange": [
+        "2026-06-29",
+        "2026-08-09"
+      ],
       "encoding": "UTF-16",
       "sha256": "40003ef8b7d0ffd0ad96601ddcfde71415cb2e395cc8a215662a44e15c2c85a4"
     },
     "Esfuerzo operativo_merch.csv": {
       "sourceRows": 2777,
       "validRows": 2777,
-      "exactDuplicatesIgnored": 0,
+      "blankRowsIgnored": 0,
+      "summaryRowsIgnored": 0,
+      "exactDuplicates": 0,
       "headerRow": 11,
+      "valueColumn": 7,
+      "rowWidths": {
+        "7": 2777
+      },
+      "indicators": {
+        "USD": 2777
+      },
+      "stores": 72,
+      "dateRange": [
+        "2026-06-29",
+        "2026-08-09"
+      ],
       "encoding": "UTF-16",
       "sha256": "7bd02b241289cd1ee6cb2dc4935b0745034a0a7ea0f74dadd336b77b1e064389"
     },

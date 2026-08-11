@@ -25,7 +25,7 @@ MERCH_SOURCE = DATA / "Esfuerzo operativo_merch.csv"
 DIRECTORY_SOURCE = DATA / "Directorio.xlsx"
 OUTPUT = PUBLIC / "dashboard.json"
 AUDIT_OUTPUT = PUBLIC / "data-audit.json"
-VERSION = "1.0.0"
+VERSION = "1.1.0"
 
 MAIN_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -206,6 +206,12 @@ def read_directory(path: Path) -> tuple[list[dict[str, str]], dict[str, dict[str
 
 
 def csv_records(path: Path, *, has_product: bool) -> tuple[list[dict[str, object]], dict[str, object]]:
+    """Lee una descarga BI sin depender del preámbulo, total de filas o columna de medida.
+
+    El cubo agrega texto antes de la tabla y deja columnas de encabezado vacías antes
+    del valor. La posición de la medida se infiere después de ``Indicadores`` y se
+    valida contra todas las filas de datos para evitar tomar Semana, Dia o CeCo como USD.
+    """
     rows = list(csv.reader(io.StringIO(decode_csv(path))))
     header_index = next(
         (index for index, row in enumerate(rows) if {"tiendas", "mes", "semana", "dia"}.issubset({normalized_header(v) for v in row})),
@@ -214,28 +220,63 @@ def csv_records(path: Path, *, has_product: bool) -> tuple[list[dict[str, object
     if header_index is None:
         raise ValueError(f"{path.name}: no se encontró el encabezado del cubo")
     header = [normalized_header(value) for value in rows[header_index]]
-    required = {"tiendas", "mes", "semana", "dia"} | ({"productos"} if has_product else set())
+    required = {"tiendas", "mes", "semana", "dia", "indicadores"} | ({"productos"} if has_product else set())
     missing = sorted(required - set(header))
     if missing:
         raise ValueError(f"{path.name}: faltan columnas {missing}")
+    repeated = sorted(name for name in required if header.count(name) > 1)
+    if repeated:
+        raise ValueError(f"{path.name}: encabezados requeridos duplicados {repeated}")
     indices = {name: header.index(name) for name in required}
+
+    indicator_column = indices["indicadores"]
+    maximum_width = max((len(row) for row in rows[header_index:]), default=len(header))
+    numeric_columns: dict[int, int] = {}
+    for column in range(indicator_column + 1, maximum_width):
+        numeric_columns[column] = sum(
+            1 for row in rows[header_index + 1:]
+            if len(row) > column and number(row[column]) is not None
+        )
+    populated_numeric_columns = [column for column, count in numeric_columns.items() if count]
+    if len(populated_numeric_columns) != 1:
+        readable = {column + 1: numeric_columns[column] for column in populated_numeric_columns}
+        raise ValueError(
+            f"{path.name}: no fue posible identificar una única columna de valor después de "
+            f"Indicadores; candidatas={readable}"
+        )
+    value_column = populated_numeric_columns[0]
+
     output: list[dict[str, object]] = []
     seen_rows: set[tuple[str, ...]] = set()
     duplicates = 0
+    blank_rows = 0
+    ignored_summary_rows = 0
     invalid_rows: list[dict[str, object]] = []
+    indicators: Counter[str] = Counter()
+    row_widths: Counter[int] = Counter()
     for row_number, row in enumerate(rows[header_index + 1:], header_index + 2):
         if not any(clean(value) for value in row):
+            blank_rows += 1
             continue
+        row_widths[len(row)] += 1
         signature = tuple(clean(value) for value in row)
         if signature in seen_rows:
             duplicates += 1
             continue
         seen_rows.add(signature)
-        padded = row + [""] * len(header)
-        numeric_value = next((parsed for value in reversed(row) if (parsed := number(value)) is not None), None)
+        padded = row + [""] * max(len(header), value_column + 1)
+        cc = canonical_cc(padded[indices["tiendas"]])
+        if not cc or not re.fullmatch(r"\d{4,8}", cc):
+            ignored_summary_rows += 1
+            continue
+        numeric_value = number(padded[value_column])
         try:
+            indicator = clean(padded[indicator_column])
+            indicators[indicator] += 1
+            if normalized_header(indicator) != "usd":
+                raise ValueError(f"Indicador inesperado {indicator!r}")
             record = {
-                "cc": canonical_cc(padded[indices["tiendas"]]),
+                "cc": cc,
                 "month": clean(padded[indices["mes"]]).title(),
                 "week": int(float(clean(padded[indices["semana"]]))),
                 "date": parse_date(padded[indices["dia"]]),
@@ -249,11 +290,23 @@ def csv_records(path: Path, *, has_product: bool) -> tuple[list[dict[str, object
             invalid_rows.append({"row": row_number, "error": str(error)})
     if invalid_rows:
         raise ValueError(f"{path.name}: filas inválidas {invalid_rows[:8]}")
+    if duplicates:
+        raise ValueError(f"{path.name}: contiene {duplicates} filas exactamente duplicadas")
+    if not output:
+        raise ValueError(f"{path.name}: no contiene filas de datos válidas")
+    dates = [record["date"] for record in output]
     return output, {
         "sourceRows": len(rows) - header_index - 1,
         "validRows": len(output),
-        "exactDuplicatesIgnored": duplicates,
+        "blankRowsIgnored": blank_rows,
+        "summaryRowsIgnored": ignored_summary_rows,
+        "exactDuplicates": duplicates,
         "headerRow": header_index + 1,
+        "valueColumn": value_column + 1,
+        "rowWidths": {str(width): count for width, count in sorted(row_widths.items())},
+        "indicators": dict(indicators),
+        "stores": len({record["cc"] for record in output}),
+        "dateRange": [min(dates).isoformat(), max(dates).isoformat()],
         "encoding": "UTF-16" if "\x00" in path.read_bytes()[:100].decode("latin1") else "UTF-8",
     }
 
@@ -307,7 +360,9 @@ def build() -> tuple[dict[str, object], dict[str, object]]:
     if abs(source_operational_total - grouped_operational_total) > 0.001:
         raise ValueError("La suma homologada no reconcilia contra el CSV operativo")
 
-    all_dates = sorted({key[0] for key in operational_daily} | {key[0] for key in merch_daily})
+    operational_dates = sorted({key[0] for key in operational_daily})
+    merch_dates = sorted({key[0] for key in merch_daily})
+    all_dates = sorted(set(operational_dates) | set(merch_dates))
     if not all_dates:
         raise ValueError("Los CSV no contienen fechas utilizables")
     months = sorted({key[1] for key in operational_daily} | {key[1] for key in merch_daily}, key=lambda value: MONTH_ORDER.get(value, 99))
@@ -326,6 +381,8 @@ def build() -> tuple[dict[str, object], dict[str, object]]:
         "version": VERSION,
         "meta": {
             "latestDate": latest_date,
+            "latestOperationalDate": max(operational_dates),
+            "latestMerchDate": max(merch_dates),
             "minDate": min(all_dates),
             "months": months,
             "weeks": weeks,
