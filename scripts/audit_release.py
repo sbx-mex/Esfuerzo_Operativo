@@ -8,7 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from build_data import OPERATIONAL_SOURCE, MERCH_SOURCE, csv_records
+from build_data import OPERATIONAL_SOURCE, MERCH_SOURCE, VERSION, csv_records
 
 ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_DATA = ROOT / "public" / "data" / "dashboard.json"
@@ -47,6 +47,10 @@ def main() -> None:
     }
     fail(errors, expected != published, f"El JSON está atrasado: CSV={expected}, JSON={published}")
     fail(errors, meta.get("latestDate") != max(expected.values()), "latestDate no representa el corte más reciente")
+    fail(errors, max(row[0] for row in dashboard.get("daily", [])) != expected["operativo"], "Las filas de Operativo no llegan a su corte")
+    fail(errors, max(row[0] for row in dashboard.get("merch", [])) != expected["merch"], "Las filas de Merch no llegan a su corte")
+    package_version = json.loads((ROOT / "package.json").read_text(encoding="utf-8")).get("version")
+    fail(errors, len({dashboard.get("version"), audit.get("version"), package_version, VERSION}) != 1, "Las versiones de código y artefactos no coinciden")
 
     for path, profile in ((OPERATIONAL_SOURCE, operational_profile), (MERCH_SOURCE, merch_profile)):
         source = sources.get(path.name, {})

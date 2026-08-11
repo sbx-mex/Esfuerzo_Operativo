@@ -25,7 +25,7 @@ MERCH_SOURCE = DATA / "Esfuerzo operativo_merch.csv"
 DIRECTORY_SOURCE = DATA / "Directorio.xlsx"
 OUTPUT = PUBLIC / "dashboard.json"
 AUDIT_OUTPUT = PUBLIC / "data-audit.json"
-VERSION = "1.8.0"
+VERSION = "1.9.0"
 
 MAIN_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -339,13 +339,18 @@ def csv_records(path: Path, *, has_product: bool) -> tuple[list[dict[str, object
     }
 
 
-def build() -> tuple[dict[str, object], dict[str, object]]:
-    for source in (OPERATIONAL_SOURCE, MERCH_SOURCE, DIRECTORY_SOURCE):
+def build_from_sources(
+    operational_source: Path,
+    merch_source: Path,
+    directory_source: Path,
+) -> tuple[dict[str, object], dict[str, object]]:
+    """Construye el tablero sin asumir cantidad de filas ni un corte compartido."""
+    for source in (operational_source, merch_source, directory_source):
         if not source.is_file():
             raise FileNotFoundError(f"Falta el motor requerido: {source.relative_to(ROOT)}")
-    directory, directory_by_cc = read_directory(DIRECTORY_SOURCE)
-    operational, operational_profile = csv_records(OPERATIONAL_SOURCE, has_product=True)
-    merch, merch_profile = csv_records(MERCH_SOURCE, has_product=False)
+    directory, directory_by_cc = read_directory(directory_source)
+    operational, operational_profile = csv_records(operational_source, has_product=True)
+    merch, merch_profile = csv_records(merch_source, has_product=False)
 
     unknown_products = Counter()
     variants: dict[str, set[str]] = {group: set() for group in GROUPS}
@@ -436,15 +441,15 @@ def build() -> tuple[dict[str, object], dict[str, object]]:
         "status": "ok",
         "version": VERSION,
         "sources": {
-            OPERATIONAL_SOURCE.name: {**operational_profile, "sha256": file_hash(OPERATIONAL_SOURCE)},
-            MERCH_SOURCE.name: {**merch_profile, "sha256": file_hash(MERCH_SOURCE)},
-            DIRECTORY_SOURCE.name: {
+            operational_source.name: {**operational_profile, "sha256": file_hash(operational_source)},
+            merch_source.name: {**merch_profile, "sha256": file_hash(merch_source)},
+            directory_source.name: {
                 "records": len(directory),
                 "regions": len({item["region"] for item in directory}),
                 "districts": len({item["dm"] for item in directory}),
                 "storeTypes": sorted({item["storeType"] for item in directory}),
                 "benchmarkColumn": any(item["benchmark"] for item in directory),
-                "sha256": file_hash(DIRECTORY_SOURCE),
+                "sha256": file_hash(directory_source),
             },
         },
         "checks": {
@@ -466,11 +471,30 @@ def build() -> tuple[dict[str, object], dict[str, object]]:
     return payload, audit
 
 
+def build() -> tuple[dict[str, object], dict[str, object]]:
+    return build_from_sources(OPERATIONAL_SOURCE, MERCH_SOURCE, DIRECTORY_SOURCE)
+
+
+def preserve_generated_at(payload: dict[str, object]) -> None:
+    """Evita commits y despliegues vacíos cuando los tres motores no cambiaron."""
+    if not OUTPUT.is_file():
+        return
+    try:
+        existing = json.loads(OUTPUT.read_text(encoding="utf-8"))
+        previous_generated_at = existing.get("meta", {}).get("generatedAt")
+        candidate = {**payload, "meta": {**payload["meta"], "generatedAt": previous_generated_at}}
+        if candidate == existing:
+            payload["meta"]["generatedAt"] = previous_generated_at
+    except (json.JSONDecodeError, OSError, TypeError):
+        return
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true", help="Genera, valida y muestra un resumen")
     args = parser.parse_args()
     payload, audit = build()
+    preserve_generated_at(payload)
     atomic_json(OUTPUT, payload)
     atomic_json(AUDIT_OUTPUT, audit, pretty=True)
     summary = {

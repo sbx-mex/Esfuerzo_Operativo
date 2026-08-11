@@ -22,6 +22,11 @@ function validateDashboard(payload: DashboardData) {
   if (!Array.isArray(payload.merch) || !sameColumns(payload.merchColumns,expectedMerchColumns)) {
     throw new Error('El CSV Merch no tiene la estructura publicada esperada.')
   }
+  const latestOperationalRow = payload.daily.reduce((latest,row) => row[0] > latest ? row[0] : latest,'')
+  const latestMerchRow = payload.merch.reduce((latest,row) => row[0] > latest ? row[0] : latest,'')
+  if (latestOperationalRow !== payload.meta.latestOperationalDate || latestMerchRow !== payload.meta.latestMerchDate) {
+    throw new Error('La fecha del encabezado no coincide con las filas del motor seleccionado.')
+  }
   if (!payload.meta.weekPeriods?.operativo?.length || !payload.meta.weekPeriods?.merch?.length) {
     throw new Error('El motor no informa el estado de sus semanas.')
   }

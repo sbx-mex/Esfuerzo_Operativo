@@ -8,7 +8,7 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from build_data import csv_records, read_directory
+from build_data import build_from_sources, csv_records, read_directory
 
 
 def make_directory(path: Path) -> None:
@@ -59,6 +59,48 @@ class EngineTests(unittest.TestCase):
             records, profile = csv_records(path, has_product=False)
         self.assertEqual(len(records), 3)
         self.assertEqual(profile["stores"], 3)
+
+    def test_each_engine_updates_its_own_cutoff_when_rows_change(self) -> None:
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            directory = root / "Directorio.xlsx"
+            operational = root / "Esfuerzo operativo.csv"
+            merch = root / "Esfuerzo operativo_merch.csv"
+            make_directory(directory)
+
+            operational.write_text(
+                "Tiendas,Mes,Semana,Dia,Productos,Indicadores,,\n"
+                "38115,Jul,31,7/30/2026,Cake Pop Choco,USD,,2\n"
+                "38115,Jul,31,7/31/2026,Galleta Dubai,USD,,3\n",
+                encoding="utf-8",
+            )
+            merch.write_text(
+                "Tiendas,Mes,Semana,Dia,Indicadores,\n"
+                "38115,Jul,31,7/30/2026,USD,4\n",
+                encoding="utf-8",
+            )
+            payload, _ = build_from_sources(operational, merch, directory)
+            self.assertEqual(payload["meta"]["latestOperationalDate"], "2026-07-31")
+            self.assertEqual(payload["meta"]["latestMerchDate"], "2026-07-30")
+            self.assertEqual(max(row[0] for row in payload["daily"]), "2026-07-31")
+            self.assertEqual(max(row[0] for row in payload["merch"]), "2026-07-30")
+
+            operational.write_text(
+                "Tiendas,Mes,Semana,Dia,Productos,Indicadores,,\n"
+                "38115,Jul,31,7/30/2026,Cake Pop Choco,USD,,2\n",
+                encoding="utf-8",
+            )
+            merch.write_text(
+                "Tiendas,Mes,Semana,Dia,Indicadores,\n"
+                "38115,Jul,31,7/30/2026,USD,4\n"
+                "38115,Ago,31,8/1/2026,USD,5\n",
+                encoding="utf-8",
+            )
+            payload, _ = build_from_sources(operational, merch, directory)
+            self.assertEqual(payload["meta"]["latestOperationalDate"], "2026-07-30")
+            self.assertEqual(payload["meta"]["latestMerchDate"], "2026-08-01")
+            self.assertEqual(len(payload["daily"]), 1)
+            self.assertEqual(len(payload["merch"]), 2)
 
 
 if __name__ == "__main__":

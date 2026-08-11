@@ -287,6 +287,21 @@ export function App() {
   },[])
 
   useEffect(() => {
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') setRetryKey(value => value + 1)
+    }
+    const refreshFromBackForwardCache = (event: PageTransitionEvent) => {
+      if (event.persisted) setRetryKey(value => value + 1)
+    }
+    document.addEventListener('visibilitychange',refreshWhenVisible)
+    window.addEventListener('pageshow',refreshFromBackForwardCache)
+    return () => {
+      document.removeEventListener('visibilitychange',refreshWhenVisible)
+      window.removeEventListener('pageshow',refreshFromBackForwardCache)
+    }
+  },[])
+
+  useEffect(() => {
     if (!data) return
     if (region !== 'Todas' && !data.directory.some(item => item.region === region)) {
       setRegion('Todas'); setDm('Todos'); setStoreType('Todos'); setCc('Todos'); return
