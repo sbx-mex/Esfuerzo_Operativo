@@ -460,6 +460,6 @@ export function App() {
           </div>}
     </main>
 
-    <footer><div><strong>Diseñado por Jorge Alcantar Aguiar & Enrique César Flores</strong><p>Herramienta interna para reconocer avances, enfocar conversaciones y seguir impulsando resultados juntos.</p><p className="footer-tags">#Orgullo CN 🚀 · #GreenApronService · JUNTÉMONOS MÁS</p></div><a href="https://wa.me/message/ENKDSAHYHIGAN1" target="_blank" rel="noreferrer"><MessageCircle size={17} />Mi CEL · Comentarios y sugerencias</a></footer>
+    <footer><div><strong>Diseñado por Jorge Alcantar Aguiar & Enrique César Flores</strong><p>Herramienta interna para reconocer avances, enfocar conversaciones y seguir impulsando resultados juntos.</p><p className="footer-tags">#Orgullo CN 🚀 · #GreenApronService · JUNTÉMONOS MÁS</p></div><a href="https://wa.me/message/ENKDSAHYHIGAN1" target="_blank" rel="noreferrer"><MessageCircle size={17} />Comentarios y sugerencias</a></footer>
   </div>
 }
