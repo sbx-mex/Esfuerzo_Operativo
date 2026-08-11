@@ -25,7 +25,7 @@ MERCH_SOURCE = DATA / "Esfuerzo operativo_merch.csv"
 DIRECTORY_SOURCE = DATA / "Directorio.xlsx"
 OUTPUT = PUBLIC / "dashboard.json"
 AUDIT_OUTPUT = PUBLIC / "data-audit.json"
-VERSION = "1.1.0"
+VERSION = "1.2.0"
 
 MAIN_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -33,6 +33,28 @@ NS = {"m": MAIN_NS, "r": REL_NS}
 MONTH_ORDER = {"Ene": 1, "Feb": 2, "Mar": 3, "Abr": 4, "May": 5, "Jun": 6,
                "Jul": 7, "Ago": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dic": 12}
 GROUPS = ("Cake Pop's", "Galletas", "Dona G&G")
+
+
+def week_periods(records: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Describe qué semanas están cerradas sin mezclar los dos motores."""
+    dates_by_week: defaultdict[int, set[date]] = defaultdict(set)
+    for record in records:
+        dates_by_week[int(record["week"])].add(record["date"])
+    if not dates_by_week:
+        return []
+    latest_week = max(dates_by_week, key=lambda week: max(dates_by_week[week]))
+    periods: list[dict[str, object]] = []
+    for week, dates in sorted(dates_by_week.items()):
+        start, end = min(dates), max(dates)
+        is_closed = week != latest_week or end.weekday() == 6
+        periods.append({
+            "week": week,
+            "startDate": start.isoformat(),
+            "endDate": end.isoformat(),
+            "daysLoaded": len(dates),
+            "status": "closed" if is_closed else "open",
+        })
+    return periods
 
 
 def clean(value: object) -> str:
@@ -387,6 +409,10 @@ def build() -> tuple[dict[str, object], dict[str, object]]:
             "months": months,
             "weeks": weeks,
             "groups": list(GROUPS),
+            "weekPeriods": {
+                "operativo": week_periods(operational),
+                "merch": week_periods(merch),
+            },
             "metricDefinition": "USD = promedio diario de unidades totales por tienda en la selección",
             "generatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
         },

@@ -1,6 +1,6 @@
 {
   "status": "ok",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "sources": {
     "Esfuerzo operativo.csv": {
       "sourceRows": 19215,
@@ -48,7 +48,7 @@
     },
     "Directorio.xlsx": {
       "records": 72,
-      "sha256": "1a87b7a49dbba6732f0a5ed2ef54243edd296ded49f7144c2281d709101c5eaf"
+      "sha256": "24fc4cc862a96d061fef8733bc0bc84e1bf2551ed7fe006c9fff15c83918c912"
     }
   },
   "checks": {

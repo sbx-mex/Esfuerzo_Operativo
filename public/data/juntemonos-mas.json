@@ -2,7 +2,22 @@
   "project": "Esfuerzo Operativo",
   "signature": "JUNTÉMONOS MÁS",
   "message": "Reconocemos el avance, compartimos lo que funciona y construimos juntos el siguiente paso.",
-  "author": "Enrique César Flores",
+  "authors": [
+    "Jorge Alcantar Aguiar",
+    "Enrique César Flores"
+  ],
+  "corporateReport": {
+    "format": "Carta",
+    "enginesSeparated": true,
+    "immediateTarget": "Mejorar USD vs la semana anterior",
+    "sustainableTarget": "Superar 50 unidades",
+    "periodRules": {
+      "openWeek": "Seguimiento al ritmo diario; el resultado todavía puede cambiar.",
+      "oneOrTwoWeeks": "Comparativo por día.",
+      "threeOrMoreWeeks": "Tendencia semanal.",
+      "singleStore": "Detalle independiente de Cake Pop, Galletas y Dona G&G."
+    }
+  },
   "hashtags": [
     "#OrgulloCN",
     "#GreenApronService",

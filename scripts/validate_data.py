@@ -28,6 +28,25 @@ def main() -> None:
         errors.append("Existen productos sin homologar")
     operational_total = round(sum(sum(row[4:7]) for row in data.get("daily", [])), 3)
     merch_total = round(sum(row[4] for row in data.get("merch", [])), 3)
+    daily_keys = [(row[0], row[3]) for row in data.get("daily", [])]
+    merch_keys = [(row[0], row[3]) for row in data.get("merch", [])]
+    if len(daily_keys) != len(set(daily_keys)):
+        errors.append("El motor operativo contiene más de un registro agregado por fecha y CC")
+    if len(merch_keys) != len(set(merch_keys)):
+        errors.append("El motor Merch contiene más de un registro agregado por fecha y CC")
+    expected_groups = {"Cake Pop's", "Galletas", "Dona G&G"}
+    catalog_groups = data.get("catalog", {}).get("groups", {})
+    if set(catalog_groups) != expected_groups:
+        errors.append("El catálogo operativo no conserva las tres familias independientes")
+    normalized_variants = [
+        str(product).casefold().replace(" ", "")
+        for products in catalog_groups.values()
+        for product in products
+    ]
+    if len(normalized_variants) != len(set(normalized_variants)):
+        errors.append("Un producto fue asignado a más de una familia operativa")
+    if any("combo" in product for product in normalized_variants if "dona" in product):
+        errors.append("Dona en Combo no debe formar parte de Dona G&G")
     if operational_total != round(checks.get("groupedOperationalUnits", -1), 3):
         errors.append("El total operativo del JSON no reconcilia")
     if merch_total != round(checks.get("merchUnits", -1), 3):
@@ -40,6 +59,13 @@ def main() -> None:
         errors.append("La fecha del motor operativo no coincide con sus datos")
     if not merch_dates or data.get("meta", {}).get("latestMerchDate") != max(merch_dates):
         errors.append("La fecha del motor Merch no coincide con sus datos")
+    week_periods = data.get("meta", {}).get("weekPeriods", {})
+    for engine in ("operativo", "merch"):
+        periods = week_periods.get(engine, [])
+        if not periods or any(item.get("status") not in {"open", "closed"} for item in periods):
+            errors.append(f"El motor {engine} no documenta correctamente sus semanas")
+        if len({item.get("week") for item in periods}) != len(periods):
+            errors.append(f"El motor {engine} contiene semanas duplicadas en el resumen")
     for source_name, profile in audit.get("sources", {}).items():
         if source_name.endswith(".csv"):
             if profile.get("exactDuplicates"):

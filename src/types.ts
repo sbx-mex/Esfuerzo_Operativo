@@ -22,6 +22,13 @@ export interface DashboardData {
     months:string[]
     weeks:number[]
     groups:ProductGroup[]
+    weekPeriods:Record<View,Array<{
+      week:number
+      startDate:string
+      endDate:string
+      daysLoaded:number
+      status:'open'|'closed'
+    }>>
     metricDefinition:string
     generatedAt:string
   }

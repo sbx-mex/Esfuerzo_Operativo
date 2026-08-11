@@ -19,6 +19,9 @@ function validateDashboard(payload: DashboardData) {
   if (!Array.isArray(payload.merch) || !sameColumns(payload.merchColumns,expectedMerchColumns)) {
     throw new Error('El CSV Merch no tiene la estructura publicada esperada.')
   }
+  if (!payload.meta.weekPeriods?.operativo?.length || !payload.meta.weekPeriods?.merch?.length) {
+    throw new Error('El motor no informa el estado de sus semanas.')
+  }
   return payload
 }
 
