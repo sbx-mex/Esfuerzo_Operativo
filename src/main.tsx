@@ -4,7 +4,11 @@ import { registerSW } from 'virtual:pwa-register'
 import { App } from './App'
 import './styles.css'
 
-registerSW({ immediate:true })
+const updateSW = registerSW({
+  immediate:true,
+  onNeedRefresh:() => document.dispatchEvent(new Event('pwa-update-ready')),
+})
+document.addEventListener('pwa-apply-update',() => void updateSW(true))
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode><App /></StrictMode>,

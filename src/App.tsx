@@ -3,9 +3,10 @@ import {
   ArrowDownRight, ArrowUpRight, Building2, CalendarDays, Check,
   ChevronDown, ChevronRight, CircleGauge, Coffee, Cookie, Donut,
   FileDown, Info, Lightbulb, MessageCircle, PackageOpen, RefreshCw, Search, ShoppingBag,
-  Sparkles, TrendingUp, Users,
+  Sparkles, TrendingUp, Users, WifiOff,
 } from 'lucide-react'
 import { loadDashboard } from './data'
+import { InstallPrompt } from './InstallPrompt'
 import type { DashboardData, DailyRow, DmScore, Metric, ProductGroup, StoreScore, View } from './types'
 import inspiration from './juntemonos-visual.json'
 import recognition from './recognition-people.json'
@@ -295,6 +296,7 @@ export function App() {
   const [error,setError] = useState('')
   const [retryKey,setRetryKey] = useState(0)
   const [isRefreshing,setIsRefreshing] = useState(false)
+  const [isOnline,setIsOnline] = useState(() => navigator.onLine)
   const [view,setView] = useState<View>(parseView)
   const [metric,setMetric] = useState<Metric>('usd')
   const [month,setMonth] = useState('Todos')
@@ -323,6 +325,17 @@ export function App() {
     const onHashChange = () => setView(parseView())
     window.addEventListener('hashchange',onHashChange)
     return () => window.removeEventListener('hashchange',onHashChange)
+  },[])
+
+  useEffect(() => {
+    const reconnect = () => { setIsOnline(true); setRetryKey(value => value + 1) }
+    const disconnect = () => setIsOnline(false)
+    window.addEventListener('online',reconnect)
+    window.addEventListener('offline',disconnect)
+    return () => {
+      window.removeEventListener('online',reconnect)
+      window.removeEventListener('offline',disconnect)
+    }
   },[])
 
   useEffect(() => {
@@ -548,10 +561,11 @@ export function App() {
         <button id="tab-operativo" type="button" role="tab" aria-selected={view === 'operativo'} aria-controls="contenido-tablero" tabIndex={view === 'operativo' ? 0 : -1} className={view === 'operativo' ? 'active' : ''} onClick={() => changeView('operativo')}><TrendingUp size={17} aria-hidden="true" />Operativo</button>
         <button id="tab-merch" type="button" role="tab" aria-selected={view === 'merch'} aria-controls="contenido-tablero" tabIndex={view === 'merch' ? 0 : -1} className={view === 'merch' ? 'active' : ''} onClick={() => changeView('merch')}><ShoppingBag size={17} aria-hidden="true" />Merch</button>
       </nav>
-      <button type="button" className="update-badge" onClick={() => setRetryKey(value => value + 1)} aria-label="Actualizar datos" title="Consultar la última actualización">
-        <span>{isRefreshing ? 'Actualizando…' : view === 'merch' ? 'Motor Merch' : 'Motor operativo'}</span><strong>{shortDate(currentCutoff)}</strong><RefreshCw size={14} className={isRefreshing ? 'spinning' : ''} />
-      </button>
+      <div className="header-tools"><InstallPrompt /><button type="button" className="update-badge" onClick={() => setRetryKey(value => value + 1)} aria-label="Actualizar datos" title="Consultar la última actualización">
+        <span>{isRefreshing ? 'Actualizando…' : view === 'merch' ? 'Motor Merch' : 'Motor operativo'}</span><strong>{shortDate(currentCutoff)}</strong><RefreshCw size={14} className={isRefreshing ? 'spinning' : ''} aria-hidden="true" />
+      </button></div>
     </header>
+    {!isOnline && <div className="offline-banner" role="status"><WifiOff size={16} aria-hidden="true" /><span><strong>Sin conexión.</strong> Mostrando el último corte guardado.</span></div>}
 
     <main id="contenido-tablero" role="tabpanel" aria-labelledby={`tab-${view}`}>
       <section className={`hero ${view === 'merch' ? 'merch' : ''}`}>

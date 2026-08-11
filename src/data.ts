@@ -36,10 +36,9 @@ function validateDashboard(payload: DashboardData) {
 export async function loadDashboard(signal?: AbortSignal, force = false) {
   if (cachedData && !force) return cachedData
   const dataUrl = new URL(`${import.meta.env.BASE_URL}data/dashboard.json`,window.location.href)
-  dataUrl.searchParams.set('actualizar',Date.now().toString())
   const response = await fetch(dataUrl, {
     signal,
-    cache:'no-store',
+    cache:'no-cache',
     headers:{ Accept:'application/json' },
   })
   if (!response.ok) throw new Error(`No fue posible cargar el motor de datos (${response.status}).`)

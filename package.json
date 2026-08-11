@@ -1,10 +1,11 @@
 {
   "name": "esfuerzo-operativo-pwa",
   "private": true,
-  "version": "1.10.0",
+  "version": "1.11.0",
   "type": "module",
   "scripts": {
-    "check": "python scripts/build_data.py --check && tsc -b --pretty false && python scripts/test_data_engines.py && python scripts/validate_data.py && python scripts/audit_release.py && python scripts/audit_navigation.py",
+    "check": "python scripts/build_data.py --check && tsc -b --pretty false && python scripts/test_data_engines.py && python scripts/validate_data.py && python scripts/audit_release.py && python scripts/audit_navigation.py && python scripts/audit_pwa.py",
+    "icons:pwa": "python scripts/generate_pwa_icons.py",
     "test:cleanup": "python scripts/cleanup_obsolete.py --check-clean",
     "build:data": "python scripts/build_data.py --check && python scripts/validate_data.py && python scripts/audit_release.py",
     "build": "npm run build:data && tsc -b && vite build",
