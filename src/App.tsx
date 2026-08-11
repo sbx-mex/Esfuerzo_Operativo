@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import {
   ArrowDownRight, ArrowUpRight, Building2, CalendarDays, Check,
   ChevronDown, ChevronRight, CircleGauge, Coffee, Cookie, Donut,
@@ -191,6 +191,9 @@ function Filters({
   region:string; setRegion:(value:string)=>void; dm:string; setDm:(value:string)=>void; storeType:string; setStoreType:(value:string)=>void; cc:string; setCc:(value:string)=>void
   selectedGroups:Set<ProductGroup>; setSelectedGroups:(groups:Set<ProductGroup>)=>void
 }) {
+  const weekPickerRef = useRef<HTMLDetailsElement>(null)
+  const weekSummaryRef = useRef<HTMLElement>(null)
+  const [weekOpen,setWeekOpen] = useState(false)
   const regions = useMemo(() => [...new Set(data.directory.map(item => item.region))].sort(), [data])
   const dms = useMemo(() => [...new Set(data.directory.filter(item => (region === 'Todas' || item.region === region) && (storeType === 'Todos' || item.storeType === storeType)).map(item => item.dm))].sort(), [data,region,storeType])
   const storeTypes = useMemo(() => [...new Set(data.directory.filter(item => (region === 'Todas' || item.region === region) && (dm === 'Todos' || item.dm === dm)).map(item => item.storeType))].sort(),[data,region,dm])
@@ -203,8 +206,32 @@ function Filters({
     ? 'Todas'
     : selectedWeeks.size === 1
       ? `Semana ${[...selectedWeeks][0]}`
-      : `${selectedWeeks.size} semanas`
+      : selectedWeeks.size === 2
+        ? `Sem ${[...selectedWeeks].sort((a,b) => a - b).join(' y ')}`
+        : `${selectedWeeks.size} semanas`
   const scopeLevel = cc !== 'Todos' ? 'Tienda' : dm !== 'Todos' ? 'DM' : storeType !== 'Todos' ? 'Tipo tienda' : region !== 'Todas' ? 'Región' : 'Todas'
+  const activeFilterCount = Number(month !== 'Todos') + Number(selectedWeeks.size > 0) + Number(region !== 'Todas') + Number(dm !== 'Todos') + Number(storeType !== 'Todos') + Number(cc !== 'Todos') + Number(view !== 'merch' && selectedGroups.size !== data.meta.groups.length)
+
+  useEffect(() => {
+    function closeFromOutside(event:PointerEvent) {
+      if (weekPickerRef.current && !weekPickerRef.current.contains(event.target as Node)) setWeekOpen(false)
+    }
+    document.addEventListener('pointerdown',closeFromOutside)
+    return () => document.removeEventListener('pointerdown',closeFromOutside)
+  },[])
+
+  useEffect(() => setWeekOpen(false),[month,view])
+
+  function closeWeekPicker(restoreFocus = false) {
+    setWeekOpen(false)
+    if (restoreFocus) requestAnimationFrame(() => weekSummaryRef.current?.focus())
+  }
+
+  function onWeekKeyDown(event:KeyboardEvent<HTMLDetailsElement>) {
+    if (event.key !== 'Escape') return
+    event.preventDefault()
+    closeWeekPicker(true)
+  }
   function toggleWeek(value:number) {
     const next = new Set(selectedWeeks)
     if (next.has(value)) next.delete(value)
@@ -225,8 +252,17 @@ function Filters({
     if (match) { setRegion(match.region); setDm(match.dm); setStoreType(match.storeType) }
   }
   function resetScope() { setRegion('Todas'); setDm('Todos'); setStoreType('Todos'); setCc('Todos') }
-  return <section className="filters" aria-label="Filtros del tablero">
+  function resetAllFilters() {
+    setMonth('Todos'); setSelectedWeeks(new Set()); resetScope()
+    setSelectedGroups(new Set<ProductGroup>(data.meta.groups))
+    closeWeekPicker()
+  }
+  return <section className="filters" id="filtros" tabIndex={-1} aria-label="Filtros del tablero">
     <div className="filter-topline">
+      <div className="filter-summary" aria-live="polite">
+        <span>{activeFilterCount ? `${activeFilterCount} ${activeFilterCount === 1 ? 'filtro activo' : 'filtros activos'}` : 'Consulta completa'}</span>
+        {activeFilterCount > 0 && <button type="button" onClick={resetAllFilters}>Limpiar</button>}
+      </div>
       <div className="metric-toggle" aria-label="Métrica principal">
         <button type="button" className={metric === 'usd' ? 'active' : ''} onClick={() => setMetric('usd')} aria-pressed={metric === 'usd'}>USD</button>
         <button type="button" className={metric === 'total' ? 'active' : ''} onClick={() => setMetric('total')} aria-pressed={metric === 'total'}>Unidades Totales</button>
@@ -235,9 +271,11 @@ function Filters({
     <div className="scope-guide" id="scope-guide"><span className="scope-guide-icon"><CircleGauge size={16} /></span><p><strong>Elige hasta dónde quieres consultar.</strong> Filtra por <b>Región</b>, <b>DM</b> o <b>Tipo tienda</b>; también puedes ir directo a una <b>Tienda</b>.</p><span className="scope-current">Vista: {scopeLevel}</span>{scopeLevel !== 'Todas' && <button type="button" onClick={resetScope}>Ver todas</button>}</div>
     <div className="filter-grid">
       <label>Mes<select value={month} onChange={event => { setMonth(event.target.value); setSelectedWeeks(new Set()) }}><option>Todos</option>{data.meta.months.map(value => <option key={value}>{value}</option>)}</select></label>
-      <div className="week-field"><span>Semana</span><details className="week-picker"><summary>{weekLabel}<ChevronDown size={16} /></summary><div className="week-options">
-        <button type="button" className={selectedWeeks.size === 0 ? 'active' : ''} onClick={() => setSelectedWeeks(new Set())}>Todas las semanas</button>
-        {availableWeeks.map(value => <button type="button" key={value} className={selectedWeeks.has(value) ? 'active' : ''} onClick={() => toggleWeek(value)}><span className="week-option-label"><span className="week-checkbox">{selectedWeeks.has(value) && <Check size={13} />}</span>Semana {value}</span></button>)}
+      <div className="week-field"><span id="week-label">Semana</span><details ref={weekPickerRef} className="week-picker" open={weekOpen} onToggle={event => setWeekOpen(event.currentTarget.open)} onKeyDown={onWeekKeyDown}><summary ref={weekSummaryRef} aria-labelledby="week-label" aria-label={`Semanas seleccionadas: ${weekLabel}`}>{weekLabel}<ChevronDown size={16} aria-hidden="true" /></summary><div className="week-options">
+        <div className="week-options-heading"><span>Selecciona una o más</span><small>{selectedWeeks.size ? `${selectedWeeks.size} seleccionada${selectedWeeks.size === 1 ? '' : 's'}` : 'Todas activas'}</small></div>
+        <button type="button" className={selectedWeeks.size === 0 ? 'active' : ''} aria-pressed={selectedWeeks.size === 0} onClick={() => { setSelectedWeeks(new Set()); closeWeekPicker(true) }}>Todas las semanas</button>
+        {availableWeeks.map(value => <button type="button" key={value} className={selectedWeeks.has(value) ? 'active' : ''} aria-pressed={selectedWeeks.has(value)} onClick={() => toggleWeek(value)}><span className="week-option-label"><span className="week-checkbox" aria-hidden="true">{selectedWeeks.has(value) && <Check size={13} />}</span>Semana {value}</span></button>)}
+        <div className="week-actions"><button type="button" onClick={() => setSelectedWeeks(new Set())} disabled={selectedWeeks.size === 0}>Limpiar</button><button type="button" className="week-picker-close" onClick={() => closeWeekPicker(true)}><Check size={14} aria-hidden="true" />Listo</button></div>
       </div></details></div>
       <label>Región<select aria-describedby="scope-guide" value={region} onChange={event => { setRegion(event.target.value); setDm('Todos'); setStoreType('Todos'); setCc('Todos') }}><option>Todas</option>{regions.map(value => <option key={value}>{value}</option>)}</select></label>
       <label>Tipo tienda<select aria-describedby="scope-guide" value={storeType} onChange={event => { setStoreType(event.target.value); setCc('Todos') }}><option>Todos</option>{storeTypes.map(value => <option key={value} value={value}>{value.replace(/[_-]+/g,' ')}</option>)}</select></label>
@@ -248,6 +286,7 @@ function Filters({
       {data.meta.groups.map(group => { const Icon = groupIcon[group]; const active = selectedGroups.has(group); return <button type="button" key={group} className={active ? 'active' : ''} onClick={() => { const next = new Set(selectedGroups); if (active && next.size > 1) next.delete(group); else next.add(group); setSelectedGroups(next) }} aria-pressed={active}><Icon size={17} />{group}{active && <Check size={14} />}</button> })}
     </div><p><Info size={14} /> Recomendado: conserva las 3 para impulsar +50 unidades. Puedes comparar cualquier combinación; Dona G&amp;G no incluye Dona en Combo.</p></div>}
     <div className="metric-definition"><CircleGauge size={16} /><span><strong>USD</strong> muestra el promedio diario por tienda en el periodo seleccionado.</span></div>
+    <p className="sr-only" role="status" aria-live="polite">Vista {scopeLevel}. Periodo: {weekLabel}. {activeFilterCount} filtros activos.</p>
   </section>
 }
 
@@ -321,6 +360,14 @@ export function App() {
     setSelectedWeeks(new Set())
     history.replaceState(null,'',`#${next}`)
     window.scrollTo({ top:0, behavior:'smooth' })
+  }
+
+  function navigateViews(event:KeyboardEvent<HTMLElement>) {
+    if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return
+    event.preventDefault()
+    const next = event.key === 'ArrowLeft' || event.key === 'Home' ? 'operativo' : 'merch'
+    changeView(next)
+    requestAnimationFrame(() => document.getElementById(`tab-${next}`)?.focus())
   }
 
   const scopeStores = useMemo(() => data?.directory.filter(item =>
@@ -491,21 +538,22 @@ export function App() {
   const benchmarkScopeLabel = dm !== 'Todos' ? `${region !== 'Todas' ? `${region} · ` : ''}${dm}` : region !== 'Todas' ? region : 'Todas las regiones'
 
   return <div className="app-shell">
+    <a className="skip-link" href="#filtros">Saltar a filtros</a>
     <header className="topbar">
       <a className="brand" href="#operativo" onClick={() => changeView('operativo')}>
         <img src={`${import.meta.env.BASE_URL}assets/Esfuerzo_Operativo.webp`} alt="" width="54" height="54" />
         <span><strong>Esfuerzo Operativo</strong><small>Impulso · Acción · Resultado</small></span>
       </a>
-      <nav aria-label="Secciones principales">
-        <button type="button" className={view === 'operativo' ? 'active' : ''} onClick={() => changeView('operativo')}><TrendingUp size={17} />Operativo</button>
-        <button type="button" className={view === 'merch' ? 'active' : ''} onClick={() => changeView('merch')}><ShoppingBag size={17} />Merch</button>
+      <nav aria-label="Secciones principales" role="tablist" onKeyDown={navigateViews}>
+        <button id="tab-operativo" type="button" role="tab" aria-selected={view === 'operativo'} aria-controls="contenido-tablero" tabIndex={view === 'operativo' ? 0 : -1} className={view === 'operativo' ? 'active' : ''} onClick={() => changeView('operativo')}><TrendingUp size={17} aria-hidden="true" />Operativo</button>
+        <button id="tab-merch" type="button" role="tab" aria-selected={view === 'merch'} aria-controls="contenido-tablero" tabIndex={view === 'merch' ? 0 : -1} className={view === 'merch' ? 'active' : ''} onClick={() => changeView('merch')}><ShoppingBag size={17} aria-hidden="true" />Merch</button>
       </nav>
       <button type="button" className="update-badge" onClick={() => setRetryKey(value => value + 1)} aria-label="Actualizar datos" title="Consultar la última actualización">
         <span>{isRefreshing ? 'Actualizando…' : view === 'merch' ? 'Motor Merch' : 'Motor operativo'}</span><strong>{shortDate(currentCutoff)}</strong><RefreshCw size={14} className={isRefreshing ? 'spinning' : ''} />
       </button>
     </header>
 
-    <main>
+    <main id="contenido-tablero" role="tabpanel" aria-labelledby={`tab-${view}`}>
       <section className={`hero ${view === 'merch' ? 'merch' : ''}`}>
         <div className="hero-copy"><h1>{viewCopy.title}</h1><p>{viewCopy.description}</p>
           <div className="hero-actions"><a href="#tablero">Ver avance <ChevronRight size={17} /></a><span><CalendarDays size={16} /> Corte al {shortDate(currentCutoff)}</span></div>
@@ -516,7 +564,7 @@ export function App() {
       <div id="tablero" className="dashboard-anchor" />
       <Filters data={data} view={view} metric={metric} setMetric={setMetric} month={month} setMonth={setMonth} selectedWeeks={selectedWeeks} setSelectedWeeks={setSelectedWeeks} region={region} setRegion={setRegion} dm={dm} setDm={setDm} storeType={storeType} setStoreType={setStoreType} cc={cc} setCc={setCc} selectedGroups={selectedGroups} setSelectedGroups={setSelectedGroups} />
 
-      <div className="executive-heading"><div><p className="eyebrow">Datos clave</p><h2>{viewLabel} al corte</h2></div><span>{region === 'Todas' ? 'Región completa' : region}{dm !== 'Todos' ? ` · ${dm}` : ''}</span></div>
+      <div className="executive-heading" id="resultados" tabIndex={-1}><div><p className="eyebrow">Datos clave</p><h2>{viewLabel} al corte</h2></div><span aria-live="polite">{region === 'Todas' ? 'Región completa' : region}{dm !== 'Todos' ? ` · ${dm}` : ''} · {storeScores.length} tiendas</span></div>
       <section className="kpi-grid" aria-label="Resumen ejecutivo">
         <Card label="Total unidades" value={integerFormatter.format(totalUnits)} note={`${dayCount} ${dayCount === 1 ? 'día' : 'días'} · ${storeScores.length} tiendas`} icon={PackageOpen} />
         <Card label="USD" value={decimalFormatter.format(totalUsd)} note="Promedio diario por tienda" icon={CircleGauge} tone="gold" />
