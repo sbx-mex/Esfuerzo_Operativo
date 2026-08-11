@@ -10,6 +10,8 @@ on:
       - "package.json"
       - "package-lock.json"
       - "scripts/audit_navigation.py"
+      - "scripts/audit_pwa.py"
+      - "scripts/generate_pwa_icons.py"
       - "vite.config.ts"
       - "tsconfig*.json"
       - ".github/workflows/deploy-pages.yml"
