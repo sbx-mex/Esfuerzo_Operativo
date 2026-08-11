@@ -1,6 +1,12 @@
 name: Auditar y limpiar obsoletos
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/cleanup_obsolete.py"
+      - "scripts/obsolete-files.json"
+      - ".github/workflows/cleanup-obsolete.yml"
   workflow_dispatch:
     inputs:
       confirm_delete:
@@ -29,13 +35,13 @@ jobs:
         run: python scripts/cleanup_obsolete.py
 
       - name: Eliminar únicamente lo autorizado
-        if: ${{ inputs.confirm_delete == 'ELIMINAR' }}
+        if: ${{ github.event_name == 'push' || inputs.confirm_delete == 'ELIMINAR' }}
         run: |
           python scripts/cleanup_obsolete.py --apply
           python scripts/cleanup_obsolete.py --check-clean
 
       - name: Registrar limpieza
-        if: ${{ inputs.confirm_delete == 'ELIMINAR' }}
+        if: ${{ github.event_name == 'push' || inputs.confirm_delete == 'ELIMINAR' }}
         run: |
           if git diff --quiet; then
             echo "No hay obsoletos presentes."

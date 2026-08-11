@@ -9,6 +9,7 @@ on:
       - "index.html"
       - "package.json"
       - "package-lock.json"
+      - "scripts/audit_navigation.py"
       - "vite.config.ts"
       - "tsconfig*.json"
       - ".github/workflows/deploy-pages.yml"
