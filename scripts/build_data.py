@@ -387,7 +387,7 @@ def build() -> tuple[dict[str, object], dict[str, object]]:
             "months": months,
             "weeks": weeks,
             "groups": list(GROUPS),
-            "metricDefinition": "USD = unidades / días del rango / tiendas visibles",
+            "metricDefinition": "USD = promedio diario de unidades totales por tienda en la selección",
             "generatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
         },
         "directory": directory,

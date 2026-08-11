@@ -26,7 +26,7 @@ export async function loadDashboard(signal?: AbortSignal) {
   if (cachedData) return cachedData
   const response = await fetch(`${import.meta.env.BASE_URL}data/dashboard.json`, {
     signal,
-    cache:'no-store',
+    cache:'no-cache',
     headers:{ Accept:'application/json' },
   })
   if (!response.ok) throw new Error(`No fue posible cargar el motor de datos (${response.status}).`)

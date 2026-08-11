@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  ArrowDownRight, ArrowUpRight, BarChart3, Building2, CalendarDays, Check,
+  ArrowDownRight, ArrowUpRight, Building2, CalendarDays, Check,
   ChevronRight, CircleGauge, Coffee, Cookie, Donut, Info, PackageOpen,
-  RefreshCw, Search, ShoppingBag, Sparkles, Store, TrendingUp, UsersRound,
+  RefreshCw, Search, ShoppingBag, Sparkles, TrendingUp, UsersRound,
 } from 'lucide-react'
 import { loadDashboard } from './data'
 import type { DashboardData, DailyRow, DmScore, Metric, ProductGroup, StoreScore, View } from './types'
@@ -37,7 +37,7 @@ function metricValue(metric: Metric, units: number, usd: number) {
 }
 
 function metricLabel(metric: Metric) {
-  return metric === 'usd' ? 'USD' : 'Total impulso'
+  return metric === 'usd' ? 'USD' : 'Unidades Totales'
 }
 
 function formatMetric(metric: Metric, value: number) {
@@ -73,23 +73,23 @@ function TrendChart({ points, metric }: { points:Array<{ date:string; value:numb
   </div>
 }
 
-function StoreTable({ scores, metric, title, description, ascending = false }: { scores:StoreScore[]; metric:Metric; title:string; description:string; ascending?:boolean }) {
+function StoreTable({ scores, metric, title, ascending = false, limit = 10 }: { scores:StoreScore[]; metric:Metric; title:string; ascending?:boolean; limit?:number }) {
   const sorted = [...scores].sort((a,b) => {
     const difference = metricValue(metric, a.units, a.usd) - metricValue(metric, b.units, b.usd)
     return (ascending ? difference : -difference) || a.store.localeCompare(b.store, 'es')
-  }).slice(0,15)
+  }).slice(0,limit)
   const max = Math.max(1, ...sorted.map(score => metricValue(metric, score.units, score.usd)))
   return <section className="panel ranking-panel">
-    <div className="panel-heading"><div><p className="eyebrow">{ascending ? 'Foco operativo' : 'Lectura ejecutiva'}</p><h2>{title}</h2><p>{description}</p></div><span className={`status-chip ${ascending ? 'warning' : ''}`}>{sorted.length} tiendas</span></div>
+    <div className="panel-heading"><div><p className="eyebrow">{ascending ? 'Foco' : 'Top'}</p><h2>{title}</h2></div><span className={`status-chip ${ascending ? 'warning' : ''}`}>{sorted.length} tiendas</span></div>
     {!sorted.length ? <EmptyState>No existen tiendas en el alcance seleccionado.</EmptyState> : <div className="table-scroll"><table>
-      <thead><tr><th>#</th><th>Tienda</th><th>CeCo</th><th>DM</th><th>Total</th><th>USD</th><th>{metricLabel(metric)}</th></tr></thead>
+      <thead><tr><th>#</th><th>Tienda</th><th>USD</th><th>Total impulso</th></tr></thead>
       <tbody>{sorted.map((score,index) => {
         const value = metricValue(metric, score.units, score.usd)
         return <tr key={score.cc}>
           <td><span className={`rank-badge ${ascending && index < 3 ? 'needs-focus' : ''}`}>{index + 1}</span></td>
-          <td><strong>{score.store}</strong></td><td>{score.cc}</td><td>{score.dm}</td>
-          <td>{integerFormatter.format(score.units)}</td><td>{decimalFormatter.format(score.usd)}</td>
-          <td><div className="inline-meter"><span style={{ width:`${value / max * 100}%` }} /><strong>{formatMetric(metric,value)}</strong></div></td>
+          <td><strong>{score.store}</strong></td>
+          <td>{metric === 'usd' ? <div className="inline-meter"><span style={{ width:`${value / max * 100}%` }} /><strong>{decimalFormatter.format(score.usd)}</strong></div> : decimalFormatter.format(score.usd)}</td>
+          <td>{metric === 'total' ? <div className="inline-meter"><span style={{ width:`${value / max * 100}%` }} /><strong>{integerFormatter.format(score.units)}</strong></div> : integerFormatter.format(score.units)}</td>
         </tr>
       })}</tbody>
     </table></div>}
@@ -100,7 +100,7 @@ function DmTable({ scores, metric }: { scores:DmScore[]; metric:Metric }) {
   const sorted = [...scores].sort((a,b) => metricValue(metric,b.units,b.usd) - metricValue(metric,a.units,a.usd))
   const max = Math.max(1, ...sorted.map(score => metricValue(metric, score.units, score.usd)))
   return <section className="panel dm-panel">
-    <div className="panel-heading"><div><p className="eyebrow">Resumen DM</p><h2>Una lectura, seis conversaciones.</h2><p>Comparación justa con el mismo periodo, productos y métrica.</p></div><span className="status-chip">{sorted.length} distritos</span></div>
+    <div className="panel-heading"><div><p className="eyebrow">Región Centro Norte</p><h2>Resumen DM</h2></div><span className="status-chip">{sorted.length} distritos</span></div>
     {!sorted.length ? <EmptyState>No hay distritos en el alcance seleccionado.</EmptyState> : <div className="dm-list">
       {sorted.map((score,index) => {
         const value = metricValue(metric,score.units,score.usd)
@@ -108,8 +108,7 @@ function DmTable({ scores, metric }: { scores:DmScore[]; metric:Metric }) {
           <span className="dm-position">{index + 1}</span>
           <div className="dm-name"><strong>{score.dm}</strong><small>{score.activeStores}/{score.stores} tiendas con impulso</small></div>
           <div className="dm-progress"><span style={{ width:`${value / max * 100}%` }} /></div>
-          <div className="dm-value"><strong>{formatMetric(metric,value)}</strong><small>{metricLabel(metric)}</small></div>
-          <div className="dm-units"><strong>{integerFormatter.format(score.units)}</strong><small>unidades</small></div>
+          <div className="dm-value"><strong>{formatMetric(metric,value)}</strong><small>{metric === 'usd' ? 'USD' : 'Total impulso'}</small></div>
         </article>
       })}
     </div>}
@@ -117,12 +116,11 @@ function DmTable({ scores, metric }: { scores:DmScore[]; metric:Metric }) {
 }
 
 function Filters({
-  data, view, metric, setMetric, month, setMonth, week, setWeek, startDate, setStartDate, endDate, setEndDate,
+  data, view, metric, setMetric, month, setMonth, week, setWeek,
   region, setRegion, dm, setDm, cc, setCc, selectedGroups, toggleGroup,
 }:{
   data:DashboardData; view:View; metric:Metric; setMetric:(metric:Metric)=>void
   month:string; setMonth:(value:string)=>void; week:string; setWeek:(value:string)=>void
-  startDate:string; setStartDate:(value:string)=>void; endDate:string; setEndDate:(value:string)=>void
   region:string; setRegion:(value:string)=>void; dm:string; setDm:(value:string)=>void; cc:string; setCc:(value:string)=>void
   selectedGroups:Set<ProductGroup>; toggleGroup:(group:ProductGroup)=>void
 }) {
@@ -131,17 +129,15 @@ function Filters({
   const stores = useMemo(() => data.directory.filter(item => (region === 'Todas' || item.region === region) && (dm === 'Todos' || item.dm === dm)), [data,region,dm])
   return <section className="filters" aria-label="Filtros del tablero">
     <div className="filter-topline">
-      <div><p className="eyebrow">Alcance dinámico</p><h2>Consulta lo que necesitas.</h2></div>
+      <div><p className="eyebrow">Alcance</p><h2>Elige y compara.</h2></div>
       <div className="metric-toggle" aria-label="Métrica principal">
         <button type="button" className={metric === 'usd' ? 'active' : ''} onClick={() => setMetric('usd')} aria-pressed={metric === 'usd'}>USD</button>
-        <button type="button" className={metric === 'total' ? 'active' : ''} onClick={() => setMetric('total')} aria-pressed={metric === 'total'}>Total impulso</button>
+        <button type="button" className={metric === 'total' ? 'active' : ''} onClick={() => setMetric('total')} aria-pressed={metric === 'total'}>Unidades Totales</button>
       </div>
     </div>
     <div className="filter-grid">
       <label>Mes<select value={month} onChange={event => setMonth(event.target.value)}><option>Todos</option>{data.meta.months.map(value => <option key={value}>{value}</option>)}</select></label>
       <label>Semana<select value={week} onChange={event => setWeek(event.target.value)}><option>Todas</option>{data.meta.weeks.map(value => <option key={value}>{value}</option>)}</select></label>
-      <label>Desde<input type="date" min={data.meta.minDate} max={data.meta.latestDate} value={startDate} onChange={event => setStartDate(event.target.value)} /></label>
-      <label>Hasta<input type="date" min={data.meta.minDate} max={data.meta.latestDate} value={endDate} onChange={event => setEndDate(event.target.value)} /></label>
       <label>Región<select value={region} onChange={event => { setRegion(event.target.value); setDm('Todos'); setCc('Todos') }}><option>Todas</option>{regions.map(value => <option key={value}>{value}</option>)}</select></label>
       <label>DM<select value={dm} onChange={event => { setDm(event.target.value); setCc('Todos') }}><option>Todos</option>{dms.map(value => <option key={value}>{value}</option>)}</select></label>
       <label className="store-filter">Tienda<select value={cc} onChange={event => setCc(event.target.value)}><option value="Todos">Todas las tiendas</option>{stores.map(item => <option key={item.cc} value={item.cc}>{item.store} · {item.cc}</option>)}</select></label>
@@ -149,7 +145,7 @@ function Filters({
     {view !== 'merch' && <div className="product-filter"><div><span>Productos</span><small>Selección múltiple</small></div><div className="product-buttons">
       {data.meta.groups.map(group => { const Icon = groupIcon[group]; const active = selectedGroups.has(group); return <button type="button" key={group} className={active ? 'active' : ''} onClick={() => toggleGroup(group)} aria-pressed={active}><Icon size={17} />{group}{active && <Check size={14} />}</button> })}
     </div><p><Info size={14} /> Dona G&amp;G no incluye Dona en Combo.</p></div>}
-    <div className="metric-definition"><CircleGauge size={16} /><span><strong>USD</strong> = unidades seleccionadas ÷ días del rango ÷ tiendas visibles.</span></div>
+    <div className="metric-definition"><CircleGauge size={16} /><span><strong>USD</strong> muestra el promedio diario por tienda según la selección.</span></div>
   </section>
 }
 
@@ -161,8 +157,6 @@ export function App() {
   const [metric,setMetric] = useState<Metric>('usd')
   const [month,setMonth] = useState('Todos')
   const [week,setWeek] = useState('Todas')
-  const [startDate,setStartDate] = useState('')
-  const [endDate,setEndDate] = useState('')
   const [region,setRegion] = useState('Todas')
   const [dm,setDm] = useState('Todos')
   const [cc,setCc] = useState('Todos')
@@ -173,8 +167,6 @@ export function App() {
     setError('')
     loadDashboard(controller.signal).then(payload => {
       setData(payload)
-      setStartDate(current => current || payload.meta.minDate)
-      setEndDate(current => current || payload.meta.latestDate)
     }).catch(loadError => {
       if (loadError instanceof DOMException && loadError.name === 'AbortError') return
       setError(loadError instanceof Error ? loadError.message : 'No fue posible cargar la información.')
@@ -213,15 +205,13 @@ export function App() {
   const periodMatches = (row: DailyRow | DashboardData['merch'][number]) =>
     (month === 'Todos' || row[1] === month)
     && (week === 'Todas' || row[2] === Number(week))
-    && (!startDate || row[0] >= startDate)
-    && (!endDate || row[0] <= endDate)
 
   const sourceRows = useMemo(() => {
     if (!data) return []
     return view === 'merch' ? data.merch.filter(periodMatches) : data.daily.filter(periodMatches)
   // periodMatches depends only on the listed primitives.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[data,view,month,week,startDate,endDate])
+  },[data,view,month,week])
 
   const visibleDates = useMemo(() => [...new Set(sourceRows.map(row => row[0]))].sort(),[sourceRows])
   const dayCount = visibleDates.length
@@ -244,7 +234,7 @@ export function App() {
     })
   // periodMatches depends only on listed filters.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[data,view,scopeStores,scopeCc,month,week,startDate,endDate,selectedGroups,dayCount])
+  },[data,view,scopeStores,scopeCc,month,week,selectedGroups,dayCount])
 
   const totalUnits = storeScores.reduce((sum,store) => sum + store.units,0)
   const totalUsd = dayCount && storeScores.length ? totalUnits / dayCount / storeScores.length : 0
@@ -263,7 +253,7 @@ export function App() {
     return [...totals].sort(([a],[b]) => a.localeCompare(b)).map(([date,value]) => ({ date, value:metric === 'usd' ? value / scopeStores.length : value }))
   // periodMatches depends only on listed filters.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[data,view,scopeStores.length,scopeCc,visibleDates,selectedGroups,metric,month,week,startDate,endDate])
+  },[data,view,scopeStores.length,scopeCc,visibleDates,selectedGroups,metric,month,week])
 
   const dmScores = useMemo<DmScore[]>(() => {
     const byDm = new Map<string,DmScore>()
@@ -281,13 +271,18 @@ export function App() {
   if (error) return <main className="load-screen"><div className="load-card error"><RefreshCw size={30} /><h1>No pudimos leer el motor</h1><p>{error}</p><button type="button" onClick={() => setRetryKey(value => value + 1)}>Intentar de nuevo</button></div></main>
   if (!data) return <main className="load-screen"><div className="load-card"><span className="loader" /><h1>Preparando la lectura operativa</h1><p>Cruzando CSV, CeCo y Directorio…</p></div></main>
 
-  const currentMetric = metricValue(metric,totalUnits,totalUsd)
   const lastPoint = dailyPoints.at(-1)
   const previousPoint = dailyPoints.at(-2)
   const change = lastPoint && previousPoint ? lastPoint.value - previousPoint.value : 0
   const bestDm = [...dmScores].sort((a,b) => metricValue(metric,b.units,b.usd) - metricValue(metric,a.units,a.usd))[0]
-  const viewLabel = view === 'merch' ? 'Impulso Merch' : view === 'dm' ? 'Resumen DM' : 'Impulso Operativo'
+  const viewLabel = view === 'merch' ? 'Merch' : view === 'dm' ? 'Resumen' : 'Operativo'
   const currentCutoff = view === 'merch' ? data.meta.latestMerchDate : data.meta.latestOperationalDate
+  const compactStoreScope = dm !== 'Todos' || cc !== 'Todos'
+  const viewCopy = view === 'merch'
+    ? { eyebrow:'Impulso Merch', title:'Recomienda e impulsa.', description:'Seguimiento diario del impulso Merch para activar la siguiente conversación.' }
+    : view === 'dm'
+      ? { eyebrow:'Resumen regional', title:'Avanzamos como región.', description:'Una vista clara para reconocer resultados y acompañar prioridades por distrito.' }
+      : { eyebrow:'Estrategia regional y distrital', title:'Impulsamos juntos.', description:'Avance de los artículos prioritarios, listo para convertir el dato en acción.' }
 
   return <div className="app-shell">
     <header className="topbar">
@@ -297,29 +292,29 @@ export function App() {
       </a>
       <nav aria-label="Secciones principales">
         <button type="button" className={view === 'operativo' ? 'active' : ''} onClick={() => changeView('operativo')}><TrendingUp size={17} />Operativo</button>
-        <button type="button" className={view === 'dm' ? 'active' : ''} onClick={() => changeView('dm')}><UsersRound size={17} />Resumen DM</button>
         <button type="button" className={view === 'merch' ? 'active' : ''} onClick={() => changeView('merch')}><ShoppingBag size={17} />Merch</button>
+        <button type="button" className={view === 'dm' ? 'active' : ''} onClick={() => changeView('dm')}><UsersRound size={17} />Resumen</button>
       </nav>
       <div className="update-badge"><span>{view === 'merch' ? 'Motor Merch' : 'Motor operativo'}</span><strong>{shortDate(currentCutoff)}</strong></div>
     </header>
 
     <main>
       <section className={`hero ${view === 'merch' ? 'merch' : ''}`}>
-        <div className="hero-copy"><p className="eyebrow">Centro Norte · {viewLabel}</p><h1>{view === 'merch' ? 'Cada recomendación cuenta.' : view === 'dm' ? 'Claridad para acompañar.' : 'Impulsamos juntos.'}</h1><p>{view === 'merch' ? 'Sigue el avance diario de Merch y convierte el dato en una conversación operativa.' : view === 'dm' ? 'Una vista simple para reconocer avances, enfocar prioridades y activar el siguiente paso.' : 'Tres familias de producto, una lectura diaria y decisiones más cercanas a la operación.'}</p>
+        <div className="hero-copy"><p className="eyebrow">Centro Norte · {viewCopy.eyebrow}</p><h1>{viewCopy.title}</h1><p>{viewCopy.description}</p>
           <div className="hero-actions"><a href="#tablero">Ver avance <ChevronRight size={17} /></a><span><CalendarDays size={16} /> Corte al {shortDate(currentCutoff)}</span></div>
         </div>
         <div className="hero-visual"><img src={`${import.meta.env.BASE_URL}assets/${view === 'merch' ? 'impulso_merch.png' : 'Esfuerzo_Operativo.png'}`} alt={view === 'merch' ? 'Guía visual Impulso Merch de la semana' : 'Identidad visual de Esfuerzo Operativo'} loading={view === 'merch' ? 'lazy' : 'eager'} decoding="async" /></div>
       </section>
 
       <div id="tablero" className="dashboard-anchor" />
-      <Filters data={data} view={view} metric={metric} setMetric={setMetric} month={month} setMonth={setMonth} week={week} setWeek={setWeek} startDate={startDate} setStartDate={setStartDate} endDate={endDate} setEndDate={setEndDate} region={region} setRegion={setRegion} dm={dm} setDm={setDm} cc={cc} setCc={setCc} selectedGroups={selectedGroups} toggleGroup={toggleGroup} />
+      <Filters data={data} view={view} metric={metric} setMetric={setMetric} month={month} setMonth={setMonth} week={week} setWeek={setWeek} region={region} setRegion={setRegion} dm={dm} setDm={setDm} cc={cc} setCc={setCc} selectedGroups={selectedGroups} toggleGroup={toggleGroup} />
 
-      <div className="executive-heading"><div><p className="eyebrow">Vista ejecutiva</p><h2>{viewLabel} al corte</h2></div><span>{region === 'Todas' ? 'Todas las regiones' : region}{dm !== 'Todos' ? ` · ${dm}` : ''}</span></div>
+      <div className="executive-heading"><div><p className="eyebrow">Datos clave</p><h2>{viewLabel} al corte</h2></div><span>{region === 'Todas' ? 'Región completa' : region}{dm !== 'Todos' ? ` · ${dm}` : ''}</span></div>
       <section className="kpi-grid" aria-label="Resumen ejecutivo">
-        <Card label={metricLabel(metric)} value={formatMetric(metric,currentMetric)} note={`${dayCount} ${dayCount === 1 ? 'día' : 'días'} · ${storeScores.length} tiendas`} icon={metric === 'usd' ? CircleGauge : PackageOpen} />
-        <Card label="Unidades acumuladas" value={integerFormatter.format(totalUnits)} note={view === 'merch' ? 'Impulso Merch' : `${selectedGroups.size} familias seleccionadas`} icon={BarChart3} tone="gold" />
-        <Card label="Tiendas con impulso" value={`${activeStores}/${storeScores.length}`} note={`${storeScores.length ? Math.round(activeStores / storeScores.length * 100) : 0}% de cobertura`} icon={Building2} tone="cream" />
-        <Card label="Movimiento diario" value={`${change > 0 ? '+' : ''}${formatMetric(metric,change)}`} note={change > 0 ? 'vs día anterior' : change < 0 ? 'oportunidad vs día anterior' : 'se mantiene'} icon={change >= 0 ? ArrowUpRight : ArrowDownRight} tone={change >= 0 ? 'green' : 'ink'} />
+        <Card label="Total impulso" value={integerFormatter.format(totalUnits)} note={`${dayCount} ${dayCount === 1 ? 'día' : 'días'} · ${storeScores.length} tiendas`} icon={PackageOpen} />
+        <Card label="USD" value={decimalFormatter.format(totalUsd)} note="Promedio diario por tienda" icon={CircleGauge} tone="gold" />
+        <Card label="Cobertura" value={`${activeStores}/${storeScores.length}`} note={`${storeScores.length ? Math.round(activeStores / storeScores.length * 100) : 0}% con impulso`} icon={Building2} tone="cream" />
+        <Card label={`Movimiento ${metricLabel(metric)}`} value={`${change > 0 ? '+' : ''}${formatMetric(metric,change)}`} note={change > 0 ? 'vs día anterior' : change < 0 ? 'oportunidad vs día anterior' : 'se mantiene'} icon={change >= 0 ? ArrowUpRight : ArrowDownRight} tone={change >= 0 ? 'green' : 'ink'} />
       </section>
 
       <section className="two-column">
@@ -327,12 +322,12 @@ export function App() {
         <article className="panel focus-panel"><div><p className="eyebrow">Siguiente conversación</p><h2>{bestDm?.dm ?? 'Sin selección'}</h2><p>{bestDm ? `Lidera el alcance con ${formatMetric(metric,metricValue(metric,bestDm.units,bestDm.usd))} ${metricLabel(metric)}.` : 'Ajusta los filtros para encontrar el foco.'}</p></div><div className="focus-stat"><Sparkles size={22} /><span><strong>{bestDm ? `${bestDm.activeStores}/${bestDm.stores}` : '—'}</strong><small>tiendas con impulso</small></span></div><p className="focus-note">Reconoce el avance, valida la ejecución y acuerda una acción simple para el siguiente corte.</p></article>
       </section>
 
-      {view === 'dm' ? <DmTable scores={dmScores} metric={metric} /> : <StoreTable scores={storeScores} metric={metric} title={view === 'merch' ? 'Tiendas que están impulsando Merch' : 'Ranking de impulso'} description="Ordenado con los filtros y la métrica activa." />}
-      {view !== 'dm' && <StoreTable scores={storeScores} metric={metric} title="15 tiendas para acompañar" description="Menor impulso dentro del mismo periodo y alcance. Incluye tiendas en cero." ascending />}
+      {view === 'dm' ? <DmTable scores={dmScores} metric={metric} /> : <StoreTable scores={storeScores} metric={metric} title={compactStoreScope ? 'Portafolio seleccionado' : '10 tiendas con mayor impulso'} limit={compactStoreScope ? storeScores.length : 10} />}
+      {view !== 'dm' && !compactStoreScope && <StoreTable scores={storeScores} metric={metric} title="10 tiendas para acompañar" ascending limit={10} />}
 
       {view === 'merch' && <section className="merch-guide panel"><img src={`${import.meta.env.BASE_URL}assets/impulso_merch.png`} alt="Impulso Merch de la semana: conecta, impulsa, comparte, recomienda y facilita" loading="lazy" decoding="async" /><div><p className="eyebrow">Apoyo a la operación</p><h2>Conecta, recomienda e impulsa.</h2><p>Usa la lectura como punto de partida: valida disponibilidad, visibilidad y conversación con el equipo.</p><ul><li>Comparte Best Practices.</li><li>Mantén el producto visible sin saturar el POS.</li><li>Facilita llaves de mobiliario y reabastecimiento.</li></ul></div></section>}
     </main>
 
-    <footer><div><strong>Esfuerzo Operativo</strong><p>Herramienta interna para facilitar lectura, conversación y mejora continua.</p></div><p>JUNTÉMONOS MÁS · #GreenApronService</p><span>Motor validado · {data.directory.length} CeCo</span></footer>
+    <footer><div><strong>Diseñado por Enrique César Flores</strong><p>Herramienta interna para dar seguimiento al impulso, enfocar conversaciones y avanzar en equipo. Uso exclusivo de equipos autorizados.</p></div><p>#Orgullo CN 🚀 · #GreenApronService · JUNTÉMONOS MÁS</p></footer>
   </div>
 }

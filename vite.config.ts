@@ -29,19 +29,19 @@ export default defineConfig({
         cleanupOutdatedCaches:true,
         globPatterns:['**/*.{js,css,html,json}'],
         manifestTransforms:[async entries => ({
-          manifest:entries.filter(entry => !entry.url.endsWith('.png')),
+          manifest:entries.filter(entry => !entry.url.endsWith('.png') && !entry.url.endsWith('data/dashboard.json')),
           warnings:[],
         })],
         runtimeCaching:[
           {
             urlPattern:/\/data\/dashboard\.json$/,
             handler:'NetworkFirst',
-            options:{ cacheName:'esfuerzo-data-v1', networkTimeoutSeconds:4, expiration:{ maxEntries:2, maxAgeSeconds:86400 } },
+            options:{ cacheName:'esfuerzo-data-v2', networkTimeoutSeconds:3, expiration:{ maxEntries:2, maxAgeSeconds:86400 } },
           },
           {
             urlPattern:({ request }) => request.destination === 'image',
             handler:'CacheFirst',
-            options:{ cacheName:'esfuerzo-images-v1', expiration:{ maxEntries:8, maxAgeSeconds:2592000 } },
+            options:{ cacheName:'esfuerzo-images-v2', expiration:{ maxEntries:8, maxAgeSeconds:2592000 } },
           },
         ],
       },
