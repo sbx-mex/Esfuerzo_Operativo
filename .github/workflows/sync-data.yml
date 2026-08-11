@@ -39,6 +39,17 @@ jobs:
           python scripts/build_data.py --check
           python scripts/validate_data.py
 
+      - name: Resumen visible de los CSV
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          audit = json.loads(Path('public/data/data-audit.json').read_text(encoding='utf-8'))
+          for name, profile in audit['sources'].items():
+              if name.endswith('.csv'):
+                  print(f"{name}: {profile['validRows']} filas · {profile['stores']} tiendas · {profile['dateRange'][0]} a {profile['dateRange'][1]}")
+          PY
+
       - name: Validar diferencias
         run: git diff --check
 
