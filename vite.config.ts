@@ -34,7 +34,7 @@ export default defineConfig({
         })],
         runtimeCaching:[
           {
-            urlPattern:({ url }) => url.pathname.endsWith('/data/dashboard.json'),
+            urlPattern:/\/data\/dashboard\.json$/,
             handler:'NetworkFirst',
             options:{ cacheName:'esfuerzo-data-v1', networkTimeoutSeconds:4, expiration:{ maxEntries:2, maxAgeSeconds:86400 } },
           },
