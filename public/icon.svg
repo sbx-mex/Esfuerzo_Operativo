@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="Esfuerzo Operativo">
+  <rect width="192" height="192" rx="48" fill="#006241"/>
+  <circle cx="96" cy="88" r="58" fill="#fffaf2" stroke="#d2a35c" stroke-width="4"/>
+  <path d="M72 53h48a8 8 0 0 1 8 8v69l-12-7-10 7-10-7-10 7-10-7-12 7V61a8 8 0 0 1 8-8Z" fill="none" stroke="#006241" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M78 73h36M78 91h36M78 109h24" stroke="#006241" stroke-width="7" stroke-linecap="round"/>
+  <path d="m128 39 5 10 11 2-8 8 2 11-10-5-10 5 2-11-8-8 11-2Z" fill="#d2a35c"/>
+  <text x="96" y="174" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="20" font-weight="700">EO</text>
+</svg>

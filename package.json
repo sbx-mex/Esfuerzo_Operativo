@@ -1,0 +1,26 @@
+{
+  "name": "esfuerzo-operativo-pwa",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "check": "tsc -b --pretty false",
+    "build:data": "python scripts/build_data.py --check && python scripts/validate_data.py",
+    "build": "npm run build:data && tsc -b && vite build",
+    "dev": "vite",
+    "preview": "vite preview --host 0.0.0.0"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "4.4.1",
+    "lucide-react": "0.468.0",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.6",
+    "@types/react-dom": "19.1.5",
+    "typescript": "5.8.3",
+    "vite": "6.3.5",
+    "vite-plugin-pwa": "1.0.0"
+  }
+}

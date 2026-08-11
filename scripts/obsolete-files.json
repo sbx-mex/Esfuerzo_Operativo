@@ -1,0 +1,11 @@
+{
+  "obsoleteFiles": [
+    "app.js",
+    "styles.css",
+    "service-worker.js",
+    "manifest.json",
+    "data/contest-data.js",
+    "tools/process_excel.py",
+    "tools/validate_excel_engine.py"
+  ]
+}

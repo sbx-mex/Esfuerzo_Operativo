@@ -1,0 +1,62 @@
+{
+  "status": "ok",
+  "version": "1.0.0",
+  "sources": {
+    "Esfuerzo operativo.csv": {
+      "sourceRows": 19215,
+      "validRows": 19215,
+      "exactDuplicatesIgnored": 0,
+      "headerRow": 11,
+      "encoding": "UTF-16",
+      "sha256": "40003ef8b7d0ffd0ad96601ddcfde71415cb2e395cc8a215662a44e15c2c85a4"
+    },
+    "Esfuerzo operativo_merch.csv": {
+      "sourceRows": 2777,
+      "validRows": 2777,
+      "exactDuplicatesIgnored": 0,
+      "headerRow": 11,
+      "encoding": "UTF-16",
+      "sha256": "7bd02b241289cd1ee6cb2dc4935b0745034a0a7ea0f74dadd336b77b1e064389"
+    },
+    "Directorio.xlsx": {
+      "records": 72,
+      "sha256": "24fc4cc862a96d061fef8733bc0bc84e1bf2551ed7fe006c9fff15c83918c912"
+    }
+  },
+  "checks": {
+    "directoryStores": 72,
+    "csvStores": 72,
+    "missingDirectory": [],
+    "directoryWithoutSales": [],
+    "unknownProducts": {},
+    "sourceOperationalUnits": 93537.0,
+    "groupedOperationalUnits": 93537.0,
+    "merchUnits": 16415.0,
+    "dailyRows": 3004,
+    "merchDailyRows": 2777,
+    "businessMonthCalendarMismatches": 3291,
+    "dateRange": [
+      "2026-06-29",
+      "2026-08-09"
+    ]
+  },
+  "catalog": {
+    "Cake Pop's": [
+      "Cake Pop C&C",
+      "Cake Pop Choco",
+      "Cake Pop Vaini",
+      "CakePop Unicorn"
+    ],
+    "Galletas": [
+      "Galleta ChocoMex",
+      "Galleta Chunks Chocolate",
+      "Galleta Dubai",
+      "Galleta Macadamia",
+      "GalletaDulceLech",
+      "GalletaPufChocoC"
+    ],
+    "Dona G&G": [
+      "Dona Chocolate con Nuez"
+    ]
+  }
+}
