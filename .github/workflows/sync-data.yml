@@ -1,0 +1,55 @@
+name: Sincronizar motores operativos
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/Esfuerzo operativo.csv"
+      - "data/Esfuerzo operativo_merch.csv"
+      - "data/Directorio.xlsx"
+      - "scripts/build_data.py"
+      - "scripts/validate_data.py"
+      - ".github/workflows/sync-data.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: esfuerzo-data-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-data:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Preparar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Compilar y auditar los tres motores
+        run: |
+          python scripts/build_data.py --check
+          python scripts/validate_data.py
+
+      - name: Validar diferencias
+        run: git diff --check
+
+      - name: Publicar datos validados
+        run: |
+          git add public/data/dashboard.json public/data/data-audit.json
+          if git diff --cached --quiet; then
+            echo "Los motores ya están sincronizados."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "data: actualizar esfuerzo operativo"
+          git push
