@@ -22,7 +22,7 @@
         "2026-08-16"
       ],
       "encoding": "UTF-16",
-      "sha256": "5d11d28332c48fa6e2386cff8ec44e736d9d7b2bf7c94d030a9fd1b613c31d20"
+      "sha256": "b768afbb6a993ecc9b258d99ee9fbc4d37ae356bdf40605a1a856ad0e46ce50c"
     },
     "Esfuerzo operativo_merch.csv": {
       "sourceRows": 3241,
@@ -44,7 +44,7 @@
         "2026-08-16"
       ],
       "encoding": "UTF-16",
-      "sha256": "815bb4a9648f587db2ee32aa379a5d0ffe2a97ad2d00ecf2b3d2de9947440d41"
+      "sha256": "c110fcb4b5ec71928eed1442696bc8da36552f756c859a66bc66a1e02c26823d"
     },
     "Directorio.xlsx": {
       "records": 72,
