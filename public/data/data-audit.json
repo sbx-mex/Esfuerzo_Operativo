@@ -3,48 +3,48 @@
   "version": "1.11.0",
   "sources": {
     "Esfuerzo operativo.csv": {
-      "sourceRows": 25672,
-      "validRows": 25672,
+      "sourceRows": 27025,
+      "validRows": 27025,
       "blankRowsIgnored": 0,
       "summaryRowsIgnored": 0,
       "exactDuplicates": 0,
       "headerRow": 11,
       "valueColumn": 8,
       "rowWidths": {
-        "8": 25672
+        "8": 27025
       },
       "indicators": {
-        "USD": 25672
+        "USD": 27025
       },
       "stores": 72,
       "dateRange": [
         "2026-06-29",
-        "2026-08-23"
+        "2026-08-26"
       ],
       "encoding": "UTF-16",
-      "sha256": "d4c3e7aa76637c4d99bcc25d02ab9b15032b2d063ecd2ba553371b69ae7883cf"
+      "sha256": "84d59de10f5ab7486470990074acc31880f1e8fb7f25fb21c83aaf3f872bb917"
     },
     "Esfuerzo operativo_merch.csv": {
-      "sourceRows": 3714,
-      "validRows": 3714,
+      "sourceRows": 3930,
+      "validRows": 3930,
       "blankRowsIgnored": 0,
       "summaryRowsIgnored": 0,
       "exactDuplicates": 0,
       "headerRow": 11,
       "valueColumn": 7,
       "rowWidths": {
-        "7": 3714
+        "7": 3930
       },
       "indicators": {
-        "USD": 3714
+        "USD": 3930
       },
       "stores": 72,
       "dateRange": [
         "2026-06-29",
-        "2026-08-23"
+        "2026-08-26"
       ],
       "encoding": "UTF-16",
-      "sha256": "8f70a46485830243451692531953155c8c5a22e8bc962db4bfdcafb0821d629d"
+      "sha256": "397875257c0140394c2b9cd2763ea54b93ad580f187fa828942fe12751447fa9"
     },
     "Directorio.xlsx": {
       "records": 72,
@@ -65,15 +65,15 @@
     "missingDirectory": [],
     "directoryWithoutSales": [],
     "unknownProducts": {},
-    "sourceOperationalUnits": 132809.0,
-    "groupedOperationalUnits": 132809.0,
-    "merchUnits": 20510.0,
-    "dailyRows": 4010,
-    "merchDailyRows": 3714,
-    "businessMonthCalendarMismatches": 14991,
+    "sourceOperationalUnits": 139087.0,
+    "groupedOperationalUnits": 139087.0,
+    "merchUnits": 23008.0,
+    "dailyRows": 4226,
+    "merchDailyRows": 3930,
+    "businessMonthCalendarMismatches": 16344,
     "dateRange": [
       "2026-06-29",
-      "2026-08-23"
+      "2026-08-26"
     ]
   },
   "catalog": {
