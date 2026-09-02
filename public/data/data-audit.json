@@ -3,48 +3,48 @@
   "version": "1.11.0",
   "sources": {
     "Esfuerzo operativo.csv": {
-      "sourceRows": 28819,
-      "validRows": 28819,
+      "sourceRows": 29756,
+      "validRows": 29756,
       "blankRowsIgnored": 0,
       "summaryRowsIgnored": 0,
       "exactDuplicates": 0,
       "headerRow": 11,
       "valueColumn": 8,
       "rowWidths": {
-        "8": 28819
+        "8": 29756
       },
       "indicators": {
-        "USD": 28819
+        "USD": 29756
       },
       "stores": 72,
       "dateRange": [
         "2026-06-29",
-        "2026-08-30"
+        "2026-09-01"
       ],
       "encoding": "UTF-16",
-      "sha256": "c3a168e1fd970bead0b39ecbeab3376c2f69ecfb08fe0b85e9cc7fb71999a6d0"
+      "sha256": "65d6870735816b887c7405af02545e21ffdbc0b884893e24b2385d318d992b94"
     },
     "Esfuerzo operativo_merch.csv": {
-      "sourceRows": 4212,
-      "validRows": 4212,
+      "sourceRows": 4352,
+      "validRows": 4352,
       "blankRowsIgnored": 0,
       "summaryRowsIgnored": 0,
       "exactDuplicates": 0,
       "headerRow": 11,
       "valueColumn": 7,
       "rowWidths": {
-        "7": 4212
+        "7": 4352
       },
       "indicators": {
-        "USD": 4212
+        "USD": 4352
       },
       "stores": 72,
       "dateRange": [
         "2026-06-29",
-        "2026-08-30"
+        "2026-09-01"
       ],
       "encoding": "UTF-16",
-      "sha256": "c09e31c1688426c6677d50571ec1bf39d01be912d7c85ed0242649cae336c70d"
+      "sha256": "2b7027c5f4a9af9597474f65bf3200af57d82602e01010305b031fdb620be151"
     },
     "Directorio.xlsx": {
       "records": 72,
@@ -65,21 +65,22 @@
     "missingDirectory": [],
     "directoryWithoutSales": [],
     "unknownProducts": {},
-    "sourceOperationalUnits": 148491.0,
-    "groupedOperationalUnits": 148491.0,
-    "merchUnits": 25107.0,
-    "dailyRows": 4513,
-    "merchDailyRows": 4212,
-    "businessMonthCalendarMismatches": 18138,
+    "sourceOperationalUnits": 152396.0,
+    "groupedOperationalUnits": 152396.0,
+    "merchUnits": 26727.0,
+    "dailyRows": 4657,
+    "merchDailyRows": 4352,
+    "businessMonthCalendarMismatches": 18524,
     "dateRange": [
       "2026-06-29",
-      "2026-08-30"
+      "2026-09-01"
     ]
   },
   "catalog": {
-    "Cake Pop's": [
+    "Cake Pop": [
       "Cake Pop C&C",
       "Cake Pop Choco",
+      "Cake Pop Eri",
       "Cake Pop Vaini",
       "CakePop Unicorn"
     ],
@@ -93,6 +94,11 @@
     ],
     "Dona G&G": [
       "Dona Chocolate con Nuez"
+    ],
+    "Mini Pan Muerto": [
+      "PanMuertoAvella",
+      "PanMuertoQueso",
+      "PanMuertoZarza"
     ]
   }
 }
