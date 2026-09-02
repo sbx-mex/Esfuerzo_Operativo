@@ -31,7 +31,7 @@ def main() -> None:
         errors.append("Existen CC sin cruce en el directorio")
     if checks.get("unknownProducts"):
         errors.append("Existen productos sin homologar")
-    operational_total = round(sum(sum(row[4:7]) for row in data.get("daily", [])), 3)
+    operational_total = round(sum(sum(row[4:8]) for row in data.get("daily", [])), 3)
     merch_total = round(sum(row[4] for row in data.get("merch", [])), 3)
     daily_keys = [(row[0], row[3]) for row in data.get("daily", [])]
     merch_keys = [(row[0], row[3]) for row in data.get("merch", [])]
@@ -39,10 +39,10 @@ def main() -> None:
         errors.append("El motor operativo contiene más de un registro agregado por fecha y CC")
     if len(merch_keys) != len(set(merch_keys)):
         errors.append("El motor Merch contiene más de un registro agregado por fecha y CC")
-    expected_groups = {"Cake Pop's", "Galletas", "Dona G&G"}
+    expected_groups = {"Cake Pop", "Galletas", "Dona G&G", "Mini Pan Muerto"}
     catalog_groups = data.get("catalog", {}).get("groups", {})
     if set(catalog_groups) != expected_groups:
-        errors.append("El catálogo operativo no conserva las tres familias independientes")
+        errors.append("El catálogo operativo no conserva las cuatro familias independientes")
     normalized_variants = [
         str(product).casefold().replace(" ", "")
         for products in catalog_groups.values()
@@ -52,6 +52,13 @@ def main() -> None:
         errors.append("Un producto fue asignado a más de una familia operativa")
     if any("combo" in product for product in normalized_variants if "dona" in product):
         errors.append("Dona en Combo no debe formar parte de Dona G&G")
+    expected_mini_pan = {"panmuertoavella", "panmuertoqueso", "panmuertozarza"}
+    published_mini_pan = {
+        product for product in normalized_variants
+        if product in expected_mini_pan
+    }
+    if published_mini_pan != expected_mini_pan:
+        errors.append("Mini Pan Muerto no conserva sus tres productos homologados")
     if operational_total != round(checks.get("groupedOperationalUnits", -1), 3):
         errors.append("El total operativo del JSON no reconcilia")
     if merch_total != round(checks.get("merchUnits", -1), 3):

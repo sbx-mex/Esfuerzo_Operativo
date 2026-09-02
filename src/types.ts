@@ -1,6 +1,6 @@
 export type View = 'operativo' | 'merch'
 export type Metric = 'usd' | 'total'
-export type ProductGroup = "Cake Pop's" | 'Galletas' | 'Dona G&G'
+export type ProductGroup = 'Cake Pop' | 'Galletas' | 'Dona G&G' | 'Mini Pan Muerto'
 
 export interface DirectoryStore {
   cc:string
@@ -11,7 +11,7 @@ export interface DirectoryStore {
   benchmark:string
 }
 
-export type DailyRow = [date:string, month:string, week:number, cc:string, cakePop:number, cookies:number, dona:number]
+export type DailyRow = [date:string, month:string, week:number, cc:string, cakePop:number, cookies:number, dona:number, miniPanMuerto:number]
 export type MerchRow = [date:string, month:string, week:number, cc:string, units:number]
 
 export interface DashboardData {

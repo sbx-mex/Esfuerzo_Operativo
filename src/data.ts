@@ -3,7 +3,7 @@ import type { DashboardData } from './types'
 let cachedData: DashboardData | null = null
 
 function validateDashboard(payload: DashboardData) {
-  const expectedDailyColumns = ['date','month','week','cc','cakePop','cookies','dona']
+  const expectedDailyColumns = ['date','month','week','cc','cakePop','cookies','dona','miniPanMuerto']
   const expectedMerchColumns = ['date','month','week','cc','units']
   const sameColumns = (actual:string[], expected:string[]) =>
     Array.isArray(actual) && actual.length === expected.length && actual.every((value,index) => value === expected[index])

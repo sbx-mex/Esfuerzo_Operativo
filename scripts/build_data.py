@@ -32,7 +32,12 @@ REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 NS = {"m": MAIN_NS, "r": REL_NS}
 MONTH_ORDER = {"Ene": 1, "Feb": 2, "Mar": 3, "Abr": 4, "May": 5, "Jun": 6,
                "Jul": 7, "Ago": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dic": 12}
-GROUPS = ("Cake Pop's", "Galletas", "Dona G&G")
+GROUPS = ("Cake Pop", "Galletas", "Dona G&G", "Mini Pan Muerto")
+MINI_PAN_MUERTO_PRODUCTS = {
+    "panmuertoavella",
+    "panmuertoqueso",
+    "panmuertozarza",
+}
 
 
 def week_periods(records: list[dict[str, object]]) -> list[dict[str, object]]:
@@ -135,11 +140,13 @@ def canonical_cc(value: object) -> str:
 def product_group(product: str) -> str | None:
     key = normalized(product).replace(" ", "")
     if key.startswith("cakepop"):
-        return "Cake Pop's"
+        return "Cake Pop"
     if key.startswith("galleta"):
         return "Galletas"
     if "donachocolateconnuez" in key:
         return "Dona G&G"
+    if key in MINI_PAN_MUERTO_PRODUCTS:
+        return "Mini Pan Muerto"
     return None
 
 
@@ -354,7 +361,9 @@ def build_from_sources(
 
     unknown_products = Counter()
     variants: dict[str, set[str]] = {group: set() for group in GROUPS}
-    operational_daily: defaultdict[tuple[str, str, int, str], list[float]] = defaultdict(lambda: [0.0, 0.0, 0.0])
+    operational_daily: defaultdict[tuple[str, str, int, str], list[float]] = defaultdict(
+        lambda: [0.0] * len(GROUPS)
+    )
     source_operational_total = 0.0
     grouped_operational_total = 0.0
     date_month_mismatches = 0
@@ -428,7 +437,7 @@ def build_from_sources(
             "generatedAt": datetime.now().astimezone().isoformat(timespec="seconds"),
         },
         "directory": directory,
-        "dailyColumns": ["date", "month", "week", "cc", "cakePop", "cookies", "dona"],
+        "dailyColumns": ["date", "month", "week", "cc", "cakePop", "cookies", "dona", "miniPanMuerto"],
         "daily": daily_rows,
         "merchColumns": ["date", "month", "week", "cc", "units"],
         "merch": merch_rows,

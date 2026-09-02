@@ -11,15 +11,17 @@ import type { DashboardData, DailyRow, DmScore, Metric, ProductGroup, StoreScore
 import inspiration from './juntemonos-visual.json'
 import recognition from './recognition-people.json'
 
-const groupColumn: Record<ProductGroup, 4 | 5 | 6> = {
-  "Cake Pop's":4,
+const groupColumn: Record<ProductGroup, 4 | 5 | 6 | 7> = {
+  'Cake Pop':4,
   Galletas:5,
   'Dona G&G':6,
+  'Mini Pan Muerto':7,
 }
 const groupIcon: Record<ProductGroup, typeof Coffee> = {
-  "Cake Pop's":Coffee,
+  'Cake Pop':Coffee,
   Galletas:Cookie,
   'Dona G&G':Donut,
+  'Mini Pan Muerto':PackageOpen,
 }
 const dateFormatter = new Intl.DateTimeFormat('es-MX', { day:'2-digit', month:'short', year:'2-digit', timeZone:'UTC' })
 const integerFormatter = new Intl.NumberFormat('es-MX', { maximumFractionDigits:0 })
@@ -177,7 +179,7 @@ function ObjectiveDisclosure({ view }:{ view:View }) {
     <summary><TargetIcon /><span><strong>{merch ? 'Objetivo Merch · crecer más de 10 USD' : 'Objetivo +50 unidades'}</strong><small>{merch ? 'Contra la semana anterior' : 'Activa la guía visual de esfuerzo operativo'}</small></span><ChevronDown size={18} /></summary>
     {merch
       ? <div className="merch-objective"><span><ArrowUpRight size={26} /></span><div><strong>&gt;10 USD</strong><p>Crecimiento esperado frente a la semana anterior, comparando el mismo alcance.</p></div></div>
-      : <div><img src={`${import.meta.env.BASE_URL}assets/objetivo_esfuerzo_operativo.webp`} alt="Esfuerzo operativo: Donas, Cake Pop's y Galletas suman 50 unidades; planear, ejecutar, revisar y ajustar." loading="lazy" decoding="async" /></div>}
+      : <div><img src={`${import.meta.env.BASE_URL}assets/objetivo_esfuerzo_operativo.webp`} alt="Guía visual del objetivo de esfuerzo operativo: planear, ejecutar, revisar y ajustar." loading="lazy" decoding="async" /></div>}
   </details>
 }
 
@@ -285,7 +287,7 @@ function Filters({
     </div>
     {view !== 'merch' && <div className="product-filter"><div><span>Familias activas</span><small>Selección múltiple</small></div><div className="product-buttons">
       {data.meta.groups.map(group => { const Icon = groupIcon[group]; const active = selectedGroups.has(group); return <button type="button" key={group} className={active ? 'active' : ''} onClick={() => { const next = new Set(selectedGroups); if (active && next.size > 1) next.delete(group); else next.add(group); setSelectedGroups(next) }} aria-pressed={active}><Icon size={17} />{group}{active && <Check size={14} />}</button> })}
-    </div><p><Info size={14} /> Recomendado: conserva las 3 para impulsar +50 unidades. Puedes comparar cualquier combinación; Dona G&amp;G no incluye Dona en Combo.</p></div>}
+    </div><p><Info size={14} /> Recomendado: conserva las {data.meta.groups.length} familias para impulsar +50 unidades. Puedes comparar cualquier combinación; Dona G&amp;G no incluye Dona en Combo.</p></div>}
     <div className="metric-definition"><CircleGauge size={16} /><span><strong>USD</strong> muestra el promedio diario por tienda en el periodo seleccionado.</span></div>
     <p className="sr-only" role="status" aria-live="polite">Vista {scopeLevel}. Periodo: {weekLabel}. {activeFilterCount} filtros activos.</p>
   </section>
@@ -305,7 +307,7 @@ export function App() {
   const [dm,setDm] = useState('Todos')
   const [storeType,setStoreType] = useState('Todos')
   const [cc,setCc] = useState('Todos')
-  const [selectedGroups,setSelectedGroups] = useState<Set<ProductGroup>>(() => new Set<ProductGroup>(["Cake Pop's",'Galletas','Dona G&G']))
+  const [selectedGroups,setSelectedGroups] = useState<Set<ProductGroup>>(() => new Set<ProductGroup>())
   const selectedColumns = useMemo(() => [...selectedGroups].map(group => groupColumn[group]),[selectedGroups])
 
   useEffect(() => {
@@ -314,6 +316,11 @@ export function App() {
     if (retryKey > 0) setIsRefreshing(true)
     loadDashboard(controller.signal,retryKey > 0).then(payload => {
       setData(payload)
+      setSelectedGroups(current => {
+        const available = new Set(payload.meta.groups)
+        const retained = [...current].filter(group => available.has(group))
+        return new Set<ProductGroup>(retained.length ? retained : payload.meta.groups)
+      })
     }).catch(loadError => {
       if (loadError instanceof DOMException && loadError.name === 'AbortError') return
       setError(loadError instanceof Error ? loadError.message : 'No fue posible cargar la información.')
@@ -543,7 +550,7 @@ export function App() {
   const compactStoreScope = dm !== 'Todos' || cc !== 'Todos'
   const viewCopy = view === 'merch'
     ? { title:'Recomienda e impulsa.', description:'Crece más de 10 USD frente a la semana anterior.' }
-    : { title:'Impulsamos juntos.', description:"Cake Pop, Galletas y Dona G&G" }
+    : { title:'Impulsamos juntos.', description:'Cake Pop, Galletas, Dona G&G y Mini Pan Muerto' }
   const leaderName = cc !== 'Todos' ? scopeStores[0]?.dm : bestDm?.dm
   const leadingStore = [...storeScores].sort((a,b) => metricValue(metric,b.units,b.usd) - metricValue(metric,a.units,a.usd))[0]
   const isNationalScope = region === 'Todas' && dm === 'Todos' && cc === 'Todos'

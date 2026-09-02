@@ -15,7 +15,7 @@ Esta definición evita comparar un DM de 8 tiendas contra otro de 14 sin normali
 El Excel/CSV sigue siendo el motor. Sustituye los tres archivos en `data/` y el workflow **Sincronizar motores operativos**:
 
 1. Lee CSV UTF-16 o UTF-8 con preámbulo de cubo.
-2. Homologa Cake Pop's, Galletas y Dona G&G.
+2. Homologa Cake Pop, Galletas, Dona G&G y Mini Pan Muerto.
 3. Cruza cada CeCo contra `Directorio.xlsx` con `CC`, `Tienda`, `Región`, `DM` y `Tipo Tienda`.
 4. Reconcilia los totales y publica JSON compacto.
 5. Activa automáticamente el despliegue de GitHub Pages.

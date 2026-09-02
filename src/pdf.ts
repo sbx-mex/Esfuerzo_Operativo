@@ -2,7 +2,12 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import type { DashboardData, DirectoryStore, Metric, ProductGroup, View } from './types'
 
-const columns:Record<ProductGroup,4|5|6> = { "Cake Pop's":4, Galletas:5, 'Dona G&G':6 }
+const columns:Record<ProductGroup,4|5|6|7> = {
+  'Cake Pop':4,
+  Galletas:5,
+  'Dona G&G':6,
+  'Mini Pan Muerto':7,
+}
 const number = new Intl.NumberFormat('es-MX',{ maximumFractionDigits:1 })
 const whole = new Intl.NumberFormat('es-MX',{ maximumFractionDigits:0 })
 
@@ -59,10 +64,10 @@ export function createExecutivePdf(input:PdfInput) {
   if (cc !== 'Todos') {
     section('Despliegue diario','Una sola tienda · lectura por día y familia.')
     const body=dates.slice(-14).map(date => { const same=rows.filter(row=>row[3]===cc&&row[0]===date&&matches(row)); return operational ? [date,...data.meta.groups.map(group=>whole.format(same.reduce((sum,row)=>sum+unitsFor(row,group),0))),whole.format(same.reduce((sum,row)=>sum+unitsFor(row),0))] : [date,whole.format(same.reduce((sum,row)=>sum+unitsFor(row),0))] })
-    table([operational?['Fecha',"Cake Pop's",'Galletas','Dona G&G','Total']:['Fecha','Unidades Merch']],body)
+    table([operational?['Fecha',...data.meta.groups,'Total']:['Fecha','Unidades Merch']],body)
     const selected=scores[0]; if(selected?.benchmark){ y+=4; doc.setFillColor(...cream); doc.roundedRect(margin,y,width-margin*2,12,2,2,'F'); doc.setTextColor(...deep); doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.text('LO QUE FUNCIONA',margin+4,y+5); doc.setFont('helvetica','normal'); doc.text(selected.benchmark,margin+38,y+5,{maxWidth:width-margin*2-42}) }
   } else if (dm !== 'Todos') {
-    section('Tendencia semanal por tienda','Todo el portafolio del DM; tres familias separadas para decidir con claridad.')
+    section('Tendencia semanal por tienda','Todo el portafolio del DM; cuatro familias separadas para decidir con claridad.')
     table([['Tienda',...visibleWeeks.slice(-6).map(week=>`S${week}`),'Total']],rankingRows(scores).slice(0,16).map(item=>[item.store,...visibleWeeks.slice(-6).map(week=>fmt(weeklyValue([item],week))),fmt(value(item))]))
     if(operational){
       y+=4
@@ -71,7 +76,7 @@ export function createExecutivePdf(input:PdfInput) {
         const units=rows.filter(row=>row[3]===item.cc&&matches(row)).reduce((sum,row)=>sum+unitsFor(row,group),0)
         return {...item,units,usd:dates.length?units/dates.length:0}
       })).slice(0,5))
-      table([["Cake Pop's",'Valor','Galletas','Valor','Dona G&G','Valor']],Array.from({length:5},(_,i)=>data.meta.groups.flatMap((_,g)=>[ranked[g][i]?.store??'—',ranked[g][i]?fmt(value(ranked[g][i])):'—'])))
+      table([data.meta.groups.flatMap(group=>[group,'Valor'])],Array.from({length:5},(_,i)=>data.meta.groups.flatMap((_,g)=>[ranked[g][i]?.store??'—',ranked[g][i]?fmt(value(ranked[g][i])):'—'])),{styles:{fontSize:5.2,cellPadding:.9}})
     }
   } else {
     const national=region==='Todas'; const names=national?[...new Set(scores.map(item=>item.region))]:[...new Set(scores.map(item=>item.dm))]

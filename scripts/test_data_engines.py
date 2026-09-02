@@ -8,7 +8,7 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from build_data import build_from_sources, csv_records, read_directory
+from build_data import build_from_sources, csv_records, product_group, read_directory
 
 
 def make_directory(path: Path) -> None:
@@ -31,6 +31,15 @@ def make_directory(path: Path) -> None:
 
 
 class EngineTests(unittest.TestCase):
+    def test_product_groups_include_new_operational_family(self) -> None:
+        expected = {
+            "Cake Pop Eri": "Cake Pop",
+            "PanMuertoAvella": "Mini Pan Muerto",
+            "PanMuertoQueso": "Mini Pan Muerto",
+            "PanMuertoZarza": "Mini Pan Muerto",
+        }
+        self.assertEqual({product: product_group(product) for product in expected}, expected)
+
     def test_directory_accepts_new_regions_rows_and_benchmark(self) -> None:
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / "Directorio.xlsx"
@@ -71,7 +80,8 @@ class EngineTests(unittest.TestCase):
             operational.write_text(
                 "Tiendas,Mes,Semana,Dia,Productos,Indicadores,,\n"
                 "38115,Jul,31,7/30/2026,Cake Pop Choco,USD,,2\n"
-                "38115,Jul,31,7/31/2026,Galleta Dubai,USD,,3\n",
+                "38115,Jul,31,7/31/2026,Galleta Dubai,USD,,3\n"
+                "38115,Jul,31,7/31/2026,PanMuertoAvella,USD,,4\n",
                 encoding="utf-8",
             )
             merch.write_text(
@@ -83,6 +93,7 @@ class EngineTests(unittest.TestCase):
             self.assertEqual(payload["meta"]["latestOperationalDate"], "2026-07-31")
             self.assertEqual(payload["meta"]["latestMerchDate"], "2026-07-30")
             self.assertEqual(max(row[0] for row in payload["daily"]), "2026-07-31")
+            self.assertEqual(sum(row[7] for row in payload["daily"]), 4)
             self.assertEqual(max(row[0] for row in payload["merch"]), "2026-07-30")
 
             operational.write_text(
